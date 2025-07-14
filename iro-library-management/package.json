@@ -1,0 +1,45 @@
+{
+  "name": "iro-library-management",
+  "version": "1.0.0",
+  "description": "Library Management System for Islamic Research Organization",
+  "scripts": {
+    "setup": "npm run setup:backend && npm run setup:user-site && npm run setup:admin-site",
+    "setup:backend": "cd backend && npm install && copy .env.example .env",
+    "setup:user-site": "cd frontend/user-site && npm install && copy .env.example .env.local",
+    "setup:admin-site": "cd frontend/admin-site && npm install && copy .env.example .env.local",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:user-site\" \"npm run dev:admin-site\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:user-site": "cd frontend/user-site && npm run dev",
+    "dev:admin-site": "cd frontend/admin-site && npm run dev",
+    "build": "npm run build:backend && npm run build:user-site && npm run build:admin-site",
+    "build:backend": "cd backend && npm run build",
+    "build:user-site": "cd frontend/user-site && npm run build",
+    "build:admin-site": "cd frontend/admin-site && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:user-site\" \"npm run start:admin-site\"",
+    "start:backend": "cd backend && npm start",
+    "start:user-site": "cd frontend/user-site && npm start",
+    "start:admin-site": "cd frontend/admin-site && npm start",
+    "lint": "npm run lint:backend && npm run lint:user-site && npm run lint:admin-site",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:user-site": "cd frontend/user-site && npm run lint",
+    "lint:admin-site": "cd frontend/admin-site && npm run lint",
+    "test": "npm run test:backend",
+    "test:backend": "cd backend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "library",
+    "management",
+    "islamic",
+    "research",
+    "organization",
+    "mongodb",
+    "express",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "IRO Development Team",
+  "license": "PROPRIETARY"
+}
