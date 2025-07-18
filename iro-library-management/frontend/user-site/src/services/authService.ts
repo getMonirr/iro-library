@@ -3,12 +3,14 @@ import Cookies from "js-cookie";
 
 export interface User {
   _id: string;
-  name: string;
-  email: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
   phone?: string;
-  role: "user" | "librarian" | "admin";
+  role: "admin" | "librarian" | "member";
   isActive: boolean;
-  avatar?: string;
+  profilePicture?: string;
+  membershipStatus: "active" | "suspended" | "expired";
   createdAt: string;
   updatedAt: string;
 }
@@ -19,11 +21,11 @@ export interface LoginData {
 }
 
 export interface RegisterData {
-  name: string;
-  email: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
   phone?: string;
   password: string;
-  confirmPassword: string;
 }
 
 export interface AuthResponse {
@@ -44,34 +46,52 @@ export interface ProfileResponse {
 export const login = async (loginData: LoginData): Promise<AuthResponse> => {
   const response = await api.post("/auth/login", loginData);
 
-  if (response.data.success) {
+  if (response.data.status === "success") {
     // Store token in cookies
-    Cookies.set("auth-token", response.data.data.token, { expires: 7 });
+    Cookies.set("auth-token", response.data.token, { expires: 7 });
     // Store user in localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(response.data.data.user));
     }
+    // Return in expected format
+    return {
+      success: true,
+      data: {
+        user: response.data.data.user,
+        token: response.data.token,
+      },
+      message: "Login successful",
+    };
   }
 
-  return response.data;
+  throw new Error(response.data.message || "Login failed");
 };
 
 // Register user
 export const register = async (
   registerData: RegisterData
 ): Promise<AuthResponse> => {
-  const response = await api.post("/auth/register", registerData);
+  const response = await api.post("/auth/signup", registerData);
 
-  if (response.data.success) {
+  if (response.data.status === "success") {
     // Store token in cookies
-    Cookies.set("auth-token", response.data.data.token, { expires: 7 });
+    Cookies.set("auth-token", response.data.token, { expires: 7 });
     // Store user in localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(response.data.data.user));
     }
+    // Return in expected format
+    return {
+      success: true,
+      data: {
+        user: response.data.data.user,
+        token: response.data.token,
+      },
+      message: "Registration successful",
+    };
   }
 
-  return response.data;
+  throw new Error(response.data.message || "Registration failed");
 };
 
 // Logout user
@@ -89,15 +109,18 @@ export const logout = async (): Promise<void> => {
 
 // Get current user profile
 export const getProfile = async (): Promise<ProfileResponse> => {
-  const response = await api.get("/auth/profile");
-  return response.data;
+  const response = await api.get("/auth/me");
+  return {
+    success: response.data.status === "success",
+    data: response.data.data.user,
+  };
 };
 
 // Update user profile
 export const updateProfile = async (
   profileData: Partial<User>
 ): Promise<ProfileResponse> => {
-  const response = await api.patch("/auth/profile", profileData);
+  const response = await api.patch("/auth/me", profileData);
 
   if (response.data.success && typeof window !== "undefined") {
     localStorage.setItem("user", JSON.stringify(response.data.data));
@@ -112,7 +135,11 @@ export const changePassword = async (passwordData: {
   newPassword: string;
   confirmPassword: string;
 }): Promise<{ success: boolean; message: string }> => {
-  const response = await api.patch("/auth/change-password", passwordData);
+  const response = await api.patch("/auth/update-password", {
+    currentPassword: passwordData.currentPassword,
+    password: passwordData.newPassword,
+    passwordConfirm: passwordData.confirmPassword,
+  });
   return response.data;
 };
 

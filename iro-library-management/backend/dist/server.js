@@ -10,7 +10,6 @@ const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const helmet_1 = __importDefault(require("helmet"));
 const hpp_1 = __importDefault(require("hpp"));
-const xss_clean_1 = __importDefault(require("xss-clean"));
 const config_1 = __importDefault(require("./config/config"));
 const database_1 = require("./config/database");
 const errorHandler_1 = require("./middleware/errorHandler");
@@ -48,7 +47,6 @@ app.use("/api/", limiter);
 app.use(express_1.default.json({ limit: "10mb" }));
 app.use(express_1.default.urlencoded({ extended: true, limit: "10mb" }));
 app.use((0, express_mongo_sanitize_1.default)());
-app.use((0, xss_clean_1.default)());
 app.use((0, hpp_1.default)());
 app.use((0, compression_1.default)());
 app.use((req, res, next) => {

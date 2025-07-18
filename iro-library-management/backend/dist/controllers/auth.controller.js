@@ -12,7 +12,7 @@ const errorHandler_1 = require("../middleware/errorHandler");
 const User_1 = __importDefault(require("../models/User"));
 const signToken = (id) => {
     return jsonwebtoken_1.default.sign({ id }, config_1.default.JWT_SECRET, {
-        expiresIn: config_1.default.JWT_EXPIRE,
+        expiresIn: "7d",
     });
 };
 const createSendToken = (user, statusCode, res) => {

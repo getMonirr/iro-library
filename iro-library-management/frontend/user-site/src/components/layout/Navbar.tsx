@@ -1,13 +1,16 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import {
   BookmarkIcon,
   BookOpen,
   Home,
   Library,
+  LogOut,
   Menu,
   Moon,
   Search,
+  Settings,
   Sun,
   User,
   X,
@@ -18,7 +21,9 @@ import { useState } from "react";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { user, isLoggedIn, logout } = useAuth();
 
   const navigationItems = [
     { name: "Home", href: "/", icon: Home },
@@ -26,6 +31,11 @@ export function Navbar() {
     { name: "Categories", href: "/categories", icon: BookOpen },
     { name: "My Books", href: "/my-books", icon: BookmarkIcon },
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm dark:bg-gray-900/95">
@@ -87,14 +97,58 @@ export function Navbar() {
             </button>
 
             {/* User menu */}
-            <div className="hidden md:block">
-              <Link
-                href="/auth/login"
-                className="flex items-center space-x-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-              >
-                <User className="h-4 w-4" />
-                <span>Sign In</span>
-              </Link>
+            <div className="hidden md:block relative">
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>
+                      {user?.firstName} {user?.lastName}
+                    </span>
+                  </button>
+
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
+                      <div className="py-1">
+                        <Link
+                          href="/profile"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Profile
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex space-x-2">
+                  <Link
+                    href="/auth/login"
+                    className="flex items-center space-x-1 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Sign In</span>
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    className="flex items-center space-x-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                  >
+                    <span>Sign Up</span>
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Mobile menu button */}

@@ -1,8 +1,18 @@
 "use client";
 
-import { Bell, Menu, Search, Moon, Sun } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Bell,
+  LogOut,
+  Menu,
+  Moon,
+  Search,
+  Settings,
+  Sun,
+  User,
+} from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
@@ -10,11 +20,18 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+  };
 
   if (!mounted) {
     return null;
@@ -59,10 +76,10 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 
             {/* Theme toggle */}
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700"
             >
-              {theme === 'dark' ? (
+              {theme === "dark" ? (
                 <Sun className="h-5 w-5" />
               ) : (
                 <Moon className="h-5 w-5" />
@@ -77,12 +94,46 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 
             {/* User menu */}
             <div className="relative">
-              <button className="flex items-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700"
+              >
                 <div className="h-6 w-6 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-medium text-white">A</span>
+                  <User className="h-4 w-4 text-white" />
                 </div>
-                <span className="ml-2 text-sm font-medium hidden sm:block">Admin</span>
+                <span className="ml-2 text-sm font-medium hidden sm:block">
+                  {user?.firstName} {user?.lastName}
+                </span>
               </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
+                  <div className="py-1">
+                    <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                      <p className="font-medium">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -40,7 +40,7 @@ exports.authenticate = (0, errorHandler_1.catchAsync)(async (req, res, next) => 
         });
     }
     req.user = currentUser;
-    next();
+    return next();
 });
 const authorize = (...roles) => {
     return (req, res, next) => {
@@ -56,7 +56,7 @@ const authorize = (...roles) => {
                 message: "You do not have permission to perform this action",
             });
         }
-        next();
+        return next();
     };
 };
 exports.authorize = authorize;
@@ -76,6 +76,6 @@ exports.optionalAuth = (0, errorHandler_1.catchAsync)(async (req, res, next) => 
         catch (error) {
         }
     }
-    next();
+    return next();
 });
 //# sourceMappingURL=auth.js.map

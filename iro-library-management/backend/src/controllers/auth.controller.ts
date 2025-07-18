@@ -29,7 +29,9 @@ const createSendToken = (user: IUser, statusCode: number, res: Response) => {
 };
 
 export const signup = catchAsync(async (req: Request, res: Response) => {
+  console.log("Signup request body:", req.body);
   const errors = validationResult(req);
+  console.log("Validation errors:", errors.array());
   if (!errors.isEmpty()) {
     return res.status(400).json({
       status: "error",
@@ -50,12 +52,26 @@ export const signup = catchAsync(async (req: Request, res: Response) => {
     occupation,
   } = req.body;
 
+  console.log({
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    role,
+    dateOfBirth,
+    address,
+    occupation,
+  });
+
   // Check if user already exists
   const existingUser = await User.findOne({
     $or: [email ? { email } : {}, phone ? { phone } : {}].filter(
       (obj) => Object.keys(obj).length > 0
     ),
   });
+
+  console.log("Existing user:", existingUser);
 
   if (existingUser) {
     return res.status(400).json({
@@ -75,6 +91,8 @@ export const signup = catchAsync(async (req: Request, res: Response) => {
     address,
     occupation,
   });
+
+  console.log("New user created:", newUser);
 
   createSendToken(newUser, 201, res);
 });

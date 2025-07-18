@@ -8,11 +8,12 @@ dotenv_1.default.config();
 const config = {
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: parseInt(process.env.PORT || "5000", 10),
-    MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017/iro-library",
+    MONGODB_URI: process.env.MONGODB_URI ||
+        "mongodb+srv://iro:F1UlF0H8vmisuxIg@cluster1.d7lse9s.mongodb.net/iro-library?retryWrites=true&w=majority&appName=Cluster1",
     MONGODB_TEST_URI: process.env.MONGODB_TEST_URI ||
-        "mongodb://localhost:27017/iro-library-test",
+        "mongodb+srv://iro:F1UlF0H8vmisuxIg@cluster1.d7lse9s.mongodb.net/iro-library?retryWrites=true&w=majority&appName=Cluster1",
     JWT_SECRET: process.env.JWT_SECRET || "your-jwt-secret",
-    JWT_EXPIRE: process.env.JWT_EXPIRE || "7d",
+    JWT_EXPIRE: process.env.JWT_EXPIRE,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "your-refresh-secret",
     JWT_REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || "30d",
     EMAIL_HOST: process.env.EMAIL_HOST || "smtp.gmail.com",
