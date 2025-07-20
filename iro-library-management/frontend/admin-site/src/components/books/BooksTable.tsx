@@ -9,6 +9,8 @@ interface BooksTableProps {
   onEdit: (bookId: string) => void;
   onDelete: (bookId: string) => void;
   onView: (bookId: string) => void;
+  onBulkDelete?: (bookIds: string[]) => void;
+  onBulkStatusChange?: (bookIds: string[], isActive: boolean) => void;
 }
 
 export function BooksTable({
@@ -16,6 +18,8 @@ export function BooksTable({
   onEdit,
   onDelete,
   onView,
+  onBulkDelete,
+  onBulkStatusChange,
 }: BooksTableProps) {
   const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
 
@@ -56,6 +60,59 @@ export function BooksTable({
 
   return (
     <div className="overflow-x-auto">
+      {/* Bulk Actions */}
+      {selectedBooks.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              {selectedBooks.length} book{selectedBooks.length !== 1 ? "s" : ""}{" "}
+              selected
+            </span>
+            <div className="flex gap-2">
+              {onBulkStatusChange && (
+                <>
+                  <button
+                    onClick={() => onBulkStatusChange(selectedBooks, true)}
+                    className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Activate
+                  </button>
+                  <button
+                    onClick={() => onBulkStatusChange(selectedBooks, false)}
+                    className="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                  >
+                    Deactivate
+                  </button>
+                </>
+              )}
+              {onBulkDelete && (
+                <button
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `Are you sure you want to delete ${selectedBooks.length} books?`
+                      )
+                    ) {
+                      onBulkDelete(selectedBooks);
+                      setSelectedBooks([]);
+                    }
+                  }}
+                  className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedBooks([])}
+                className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <table className="table">
         <thead className="table-header">
           <tr>
@@ -72,6 +129,9 @@ export function BooksTable({
             </th>
             <th className="table-header-cell">Book Details</th>
             <th className="table-header-cell">Category</th>
+            <th className="table-header-cell">Format</th>
+            <th className="table-header-cell">Language</th>
+            <th className="table-header-cell">Location</th>
             <th className="table-header-cell">Copies</th>
             <th className="table-header-cell">Status</th>
             <th className="table-header-cell">Added</th>
@@ -104,9 +164,49 @@ export function BooksTable({
                 </div>
               </td>
               <td className="table-cell">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                  {book.category}
+                <div className="flex flex-wrap gap-1">
+                  {book.categories.slice(0, 2).map((category, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    >
+                      {category}
+                    </span>
+                  ))}
+                  {book.categories.length > 2 && (
+                    <span className="text-xs text-gray-400">
+                      +{book.categories.length - 2} more
+                    </span>
+                  )}
+                </div>
+              </td>
+              <td className="table-cell">
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    book.format === "physical"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : book.format === "digital"
+                      ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                      : "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                  }`}
+                >
+                  {book.format.charAt(0).toUpperCase() + book.format.slice(1)}
                 </span>
+              </td>
+              <td className="table-cell">
+                <span className="text-sm text-gray-900 dark:text-white">
+                  {book.language || "N/A"}
+                </span>
+              </td>
+              <td className="table-cell">
+                <div className="text-sm">
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {book.location?.shelf || "N/A"}
+                  </div>
+                  <div className="text-gray-500 dark:text-gray-400 text-xs">
+                    {book.location?.section || "N/A"}
+                  </div>
+                </div>
               </td>
               <td className="table-cell">
                 <div className="text-sm">

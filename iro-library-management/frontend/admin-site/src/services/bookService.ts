@@ -101,26 +101,34 @@ export interface GetBooksParams {
   search?: string;
   format?: string;
   available?: boolean;
+  isActive?: boolean;
+  language?: string;
+  isFeatured?: boolean;
   sort?: string;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface BooksResponse {
-  success: boolean;
+  status: string;
+  results: number;
   data: {
     books: Book[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalBooks: number;
-      hasNext: boolean;
-      hasPrev: boolean;
-    };
+  };
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalBooks: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
   };
 }
 
 export interface BookResponse {
-  success: boolean;
-  data: Book;
+  status: string;
+  data: {
+    book: Book;
+  };
 }
 
 export interface DeleteResponse {

@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/config";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { catchAsync } from "../middleware/errorHandler";
+import ActivityLog from "../models/ActivityLog";
 import User, { IUser } from "../models/User";
 
 const signToken = (id: string) => {
@@ -25,6 +26,10 @@ const createSendToken = (user: IUser, statusCode: number, res: Response) => {
     data: {
       user,
     },
+    ...(user.mustChangePassword && {
+      message: "You must change your password before accessing other features.",
+      mustChangePassword: true,
+    }),
   });
 };
 
@@ -141,6 +146,22 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   const correct = await user.comparePassword(password);
 
   if (!correct) {
+    // Log failed login attempt
+    await ActivityLog.create({
+      user: user._id,
+      action: "LOGIN_FAILED",
+      resource: "Auth",
+      details: {
+        identifier,
+        reason: "incorrect_password",
+        ipAddress: req.ip || req.connection?.remoteAddress,
+      },
+      ipAddress: req.ip || req.connection?.remoteAddress,
+      userAgent: req.get("User-Agent"),
+      severity: "medium",
+      category: "security",
+    });
+
     // Increment login attempts
     await user.incLoginAttempts();
     return res.status(401).json({
@@ -151,11 +172,44 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
   // Check if user is active
   if (!user.isActive) {
+    // Log inactive account login attempt
+    await ActivityLog.create({
+      user: user._id,
+      action: "LOGIN_FAILED",
+      resource: "Auth",
+      details: {
+        identifier,
+        reason: "account_inactive",
+        ipAddress: req.ip || req.connection?.remoteAddress,
+      },
+      ipAddress: req.ip || req.connection?.remoteAddress,
+      userAgent: req.get("User-Agent"),
+      severity: "high",
+      category: "security",
+    });
+
     return res.status(401).json({
       status: "error",
       message: "Your account has been deactivated. Please contact support.",
     });
   }
+
+  // Log successful login
+  await ActivityLog.create({
+    user: user._id,
+    action: "LOGIN_SUCCESS",
+    resource: "Auth",
+    details: {
+      identifier,
+      userRole: user.role,
+      isFirstLogin: user.isFirstLogin,
+      ipAddress: req.ip || req.connection?.remoteAddress,
+    },
+    ipAddress: req.ip || req.connection?.remoteAddress,
+    userAgent: req.get("User-Agent"),
+    severity: "low",
+    category: "auth",
+  });
 
   // Reset login attempts and update last login
   await User.findByIdAndUpdate(user._id, {

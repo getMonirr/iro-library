@@ -29,11 +29,24 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("admin-token");
-        localStorage.removeItem("admin-user");
-        window.location.href = "/auth/login";
+      // Only redirect on authentication/authorization failures, not on 404s
+      const errorMessage = error.response?.data?.message || "";
+
+      // Check if it's actually an auth failure (not just a missing resource)
+      if (
+        errorMessage.includes("unauthorized") ||
+        errorMessage.includes("token") ||
+        errorMessage.includes("authentication") ||
+        errorMessage.includes("expired") ||
+        error.config?.url?.includes("/auth/") ||
+        error.config?.url?.includes("/me")
+      ) {
+        // Handle unauthorized access - clear auth and redirect
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("admin-token");
+          localStorage.removeItem("admin-user");
+          window.location.href = "/auth/login";
+        }
       }
     }
 

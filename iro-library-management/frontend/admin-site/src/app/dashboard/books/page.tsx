@@ -1,25 +1,25 @@
 "use client";
 
-import { BookForm } from "@/components/books/BookForm";
 import { BooksTable } from "@/components/books/BooksTable";
-import {
-  useBooksQuery,
-  useCreateBookMutation,
-  useDeleteBookMutation,
-  useUpdateBookMutation,
-} from "@/hooks/useBooks";
-import { Book, CreateBookData, UpdateBookData } from "@/services/bookService";
-import { BookOpen, Plus, Search } from "lucide-react";
+import { useBooksQuery, useDeleteBookMutation } from "@/hooks/useBooks";
+import { Book } from "@/services/bookService";
+import { BookOpen, Download, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function BooksPage() {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [formatFilter, setFormatFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   // Debounce search query
   useEffect(() => {
@@ -39,57 +39,103 @@ export default function BooksPage() {
     refetch: fetchBooks,
   } = useBooksQuery({
     page: currentPage,
-    limit: 20, // Increased from 10 to 20 to show more books per page
+    limit: itemsPerPage,
     search: debouncedSearchQuery || undefined,
+    category: categoryFilter || undefined,
+    format: formatFilter || undefined,
+    isActive: statusFilter === "all" ? undefined : statusFilter === "active",
+    sort: `${sortOrder === "desc" ? "-" : ""}${sortBy}`,
   });
 
-  const createBookMutation = useCreateBookMutation({
-    onSuccess: () => {
-      setShowAddModal(false);
-    },
-  });
-
-  const updateBookMutation = useUpdateBookMutation({
-    onSuccess: () => {
-      setShowEditModal(false);
-      setSelectedBook(null);
-    },
-  });
+  // Debug logging
+  console.log("Books Response:", booksResponse);
+  console.log("Books Array:", booksResponse?.data?.books);
+  console.log("Total Books Count:", booksResponse?.pagination?.totalBooks);
 
   const deleteBookMutation = useDeleteBookMutation();
 
   // Extract data from response
   const books = booksResponse?.data?.books || [];
-  const totalPages = booksResponse?.data?.pagination?.totalPages || 1;
-  const totalBooksCount = booksResponse?.data?.pagination?.totalBooks || 0;
-
-  const handleCreateBook = async (
-    bookData: CreateBookData | UpdateBookData
-  ) => {
-    createBookMutation.mutate(bookData as CreateBookData);
-  };
-
-  const handleUpdateBook = async (
-    bookData: CreateBookData | UpdateBookData
-  ) => {
-    if (!selectedBook) return;
-    updateBookMutation.mutate({
-      id: selectedBook._id,
-      data: bookData as UpdateBookData,
-    });
-  };
+  const totalPages = booksResponse?.pagination?.totalPages || 1;
+  const totalBooksCount = booksResponse?.pagination?.totalBooks || 0;
 
   const handleEditBook = (bookId: string) => {
-    const book = books.find((b) => b._id === bookId);
-    if (book) {
-      setSelectedBook(book);
-      setShowEditModal(true);
-    }
+    router.push(`/dashboard/books/edit/${bookId}`);
   };
 
   const handleDeleteBook = async (bookId: string) => {
     if (!confirm("Are you sure you want to delete this book?")) return;
     deleteBookMutation.mutate(bookId);
+  };
+
+  const handleBulkDelete = async (bookIds: string[]) => {
+    // For now, delete books one by one
+    // In production, you'd want a bulk delete API endpoint
+    for (const bookId of bookIds) {
+      deleteBookMutation.mutate(bookId);
+    }
+    toast.success(`Deleted ${bookIds.length} books`);
+  };
+
+  const handleBulkStatusChange = async (
+    bookIds: string[],
+    isActive: boolean
+  ) => {
+    // This would require a bulk update API endpoint
+    toast.success(
+      `Updated ${bookIds.length} books to ${
+        isActive ? "active" : "inactive"
+      } status`
+    );
+  };
+
+  const handleExportBooks = () => {
+    // Convert books to CSV
+    const headers = [
+      "Title",
+      "Authors",
+      "ISBN",
+      "Categories",
+      "Format",
+      "Language",
+      "Total Copies",
+      "Available Copies",
+      "Location",
+      "Added Date",
+    ];
+
+    const csvData = books.map((book) => [
+      book.title,
+      book.authors.join("; "),
+      book.isbn || "",
+      book.categories.join("; "),
+      book.format,
+      book.language || "",
+      book.totalCopies,
+      book.availableCopies,
+      `${book.location?.shelf || ""} - ${book.location?.section || ""}`,
+      new Date(book.createdAt).toLocaleDateString(),
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `books_export_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(`Exported ${books.length} books to CSV`);
   };
 
   const handleViewBook = (bookId: string) => {
@@ -143,13 +189,23 @@ export default function BooksPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add New Book
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportBooks}
+            disabled={books.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <Link
+            href="/dashboard/books/add"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Book
+          </Link>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -201,9 +257,54 @@ export default function BooksPage() {
         </div>
       </div>
 
+      {/* Quick Stats */}
+      {!loading && books.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {totalBooksCount}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Total Books
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {books.reduce((sum, book) => sum + book.availableCopies, 0)}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Available Copies
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                {books.reduce(
+                  (sum, book) =>
+                    sum + (book.totalCopies - book.availableCopies),
+                  0
+                )}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Borrowed Copies
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {books.filter((book) => book.availableCopies === 0).length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Out of Stock
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search and Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Bar */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -219,7 +320,125 @@ export default function BooksPage() {
               </div>
             )}
           </div>
+
+          {/* Category Filter */}
+          <div className="min-w-40">
+            <select
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">All Categories</option>
+              <option value="Fiction">Fiction</option>
+              <option value="Non-Fiction">Non-Fiction</option>
+              <option value="Science">Science</option>
+              <option value="Technology">Technology</option>
+              <option value="History">History</option>
+              <option value="Biography">Biography</option>
+              <option value="Children">Children</option>
+              <option value="Education">Education</option>
+            </select>
+          </div>
+
+          {/* Format Filter */}
+          <div className="min-w-32">
+            <select
+              value={formatFilter}
+              onChange={(e) => {
+                setFormatFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">All Formats</option>
+              <option value="physical">Physical</option>
+              <option value="digital">Digital</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="min-w-32">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          {/* Sort Options */}
+          <div className="min-w-40">
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [newSortBy, newSortOrder] = e.target.value.split("-");
+                setSortBy(newSortBy);
+                setSortOrder(newSortOrder);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="createdAt-desc">Newest First</option>
+              <option value="createdAt-asc">Oldest First</option>
+              <option value="title-asc">Title A-Z</option>
+              <option value="title-desc">Title Z-A</option>
+              <option value="authors-asc">Author A-Z</option>
+              <option value="authors-desc">Author Z-A</option>
+              <option value="totalCopies-desc">Most Copies</option>
+              <option value="availableCopies-desc">Most Available</option>
+            </select>
+          </div>
+
+          {/* Items per page */}
+          <div className="min-w-20">
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
+
+        {/* Clear Filters Button */}
+        {(searchQuery ||
+          categoryFilter ||
+          formatFilter ||
+          statusFilter !== "all") && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setCategoryFilter("");
+                setFormatFilter("");
+                setStatusFilter("all");
+                setSortBy("createdAt");
+                setSortOrder("desc");
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Books Table */}
@@ -242,12 +461,12 @@ export default function BooksPage() {
                 ? "No books match your search criteria."
                 : "Get started by adding your first book."}
             </p>
-            <button
-              onClick={() => setShowAddModal(true)}
+            <Link
+              href="/dashboard/books/add"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Add Your First Book
-            </button>
+            </Link>
           </div>
         ) : (
           <BooksTable
@@ -255,6 +474,8 @@ export default function BooksPage() {
             onEdit={handleEditBook}
             onDelete={handleDeleteBook}
             onView={handleViewBook}
+            onBulkDelete={handleBulkDelete}
+            onBulkStatusChange={handleBulkStatusChange}
           />
         )}
       </div>
@@ -263,65 +484,128 @@ export default function BooksPage() {
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {books.length} of {totalBooksCount} books
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, totalBooksCount)} of{" "}
+            {totalBooksCount} books
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
             >
               First
             </button>
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
             >
               Previous
             </button>
-            <span className="px-4 py-2 text-gray-600 dark:text-gray-400">
-              Page {currentPage} of {totalPages}
-            </span>
+
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {(() => {
+                const maxVisiblePages = 5;
+                const halfVisible = Math.floor(maxVisiblePages / 2);
+                let startPage = Math.max(1, currentPage - halfVisible);
+                let endPage = Math.min(totalPages, currentPage + halfVisible);
+
+                // Adjust if we're near the beginning or end
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                  if (startPage === 1) {
+                    endPage = Math.min(
+                      totalPages,
+                      startPage + maxVisiblePages - 1
+                    );
+                  } else {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                  }
+                }
+
+                const pages = [];
+
+                // Add ellipsis if needed at start
+                if (startPage > 1) {
+                  pages.push(
+                    <button
+                      key={1}
+                      onClick={() => setCurrentPage(1)}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+                    >
+                      1
+                    </button>
+                  );
+                  if (startPage > 2) {
+                    pages.push(
+                      <span key="ellipsis1" className="px-2 text-gray-500">
+                        ...
+                      </span>
+                    );
+                  }
+                }
+
+                // Add visible page numbers
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i)}
+                      className={`px-3 py-2 border rounded-md text-sm ${
+                        i === currentPage
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {i}
+                    </button>
+                  );
+                }
+
+                // Add ellipsis if needed at end
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pages.push(
+                      <span key="ellipsis2" className="px-2 text-gray-500">
+                        ...
+                      </span>
+                    );
+                  }
+                  pages.push(
+                    <button
+                      key={totalPages}
+                      onClick={() => setCurrentPage(totalPages)}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+                    >
+                      {totalPages}
+                    </button>
+                  );
+                }
+
+                return pages;
+              })()}
+            </div>
+
             <button
               onClick={() =>
                 setCurrentPage(Math.min(totalPages, currentPage + 1))
               }
               disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
             >
               Next
             </button>
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
             >
               Last
             </button>
           </div>
         </div>
       )}
-
-      {/* Add Book Modal */}
-      <BookForm
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSubmit={handleCreateBook}
-        loading={createBookMutation.isPending}
-      />
-
-      {/* Edit Book Modal */}
-      <BookForm
-        book={selectedBook || undefined}
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setSelectedBook(null);
-        }}
-        onSubmit={handleUpdateBook}
-        loading={updateBookMutation.isPending}
-      />
     </div>
   );
 }

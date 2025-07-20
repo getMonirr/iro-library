@@ -6,7 +6,6 @@ import {
   login,
   logout,
   resetPassword,
-  signup,
   updatePassword,
 } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/auth";
@@ -83,7 +82,8 @@ const updatePasswordValidation = [
 ];
 
 // Routes
-router.post("/signup", signupValidation, signup);
+// Note: Signup is disabled for public users. Only super admins can create admin accounts
+// router.post("/signup", signupValidation, signup); // Commented out - no public signup
 router.post("/login", loginValidation, login);
 router.post("/logout", logout);
 router.post("/forgot-password", forgotPasswordValidation, forgotPassword);

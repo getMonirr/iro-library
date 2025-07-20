@@ -56,7 +56,20 @@ export const authenticate = catchAsync(
       });
     }
 
-    // 6) Grant access to protected route
+    // 6) Check if user must change password (for first login)
+    if (
+      currentUser.mustChangePassword &&
+      !req.path.includes("/change-first-login-password")
+    ) {
+      return res.status(403).json({
+        status: "error",
+        message:
+          "You must change your password before accessing other features.",
+        code: "MUST_CHANGE_PASSWORD",
+      });
+    }
+
+    // 7) Grant access to protected route
     req.user = currentUser;
     return next();
   }

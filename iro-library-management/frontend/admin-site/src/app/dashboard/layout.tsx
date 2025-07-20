@@ -3,7 +3,9 @@
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { useAuth } from "@/contexts/AuthContext";
 import {
+  Activity,
   BarChart3,
   BookMarked,
   BookOpen,
@@ -11,67 +13,12 @@ import {
   Home,
   MessageSquare,
   Settings,
+  Shield,
   Tags,
+  User,
   Users,
 } from "lucide-react";
 import { useState } from "react";
-
-const menuItems = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: Home,
-    description: "Overview and statistics",
-  },
-  {
-    label: "Books",
-    href: "/dashboard/books",
-    icon: BookOpen,
-    description: "Manage book inventory",
-  },
-  {
-    label: "Categories",
-    href: "/dashboard/categories",
-    icon: Tags,
-    description: "Organize book categories",
-  },
-  {
-    label: "Users",
-    href: "/dashboard/users",
-    icon: Users,
-    description: "Manage library members",
-  },
-  {
-    label: "Borrowing",
-    href: "/dashboard/borrowing",
-    icon: BookMarked,
-    description: "Track borrowed books",
-  },
-  {
-    label: "Reports",
-    href: "/dashboard/reports",
-    icon: BarChart3,
-    description: "Analytics and reports",
-  },
-  {
-    label: "Reviews",
-    href: "/dashboard/reviews",
-    icon: MessageSquare,
-    description: "Manage book reviews",
-  },
-  {
-    label: "Events",
-    href: "/dashboard/events",
-    icon: Calendar,
-    description: "Library events",
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-    description: "System configuration",
-  },
-];
 
 export default function DashboardLayout({
   children,
@@ -79,6 +26,95 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuth();
+
+  const baseMenuItems = [
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      icon: Home,
+      description: "Overview and statistics",
+    },
+    {
+      label: "Books",
+      href: "/dashboard/books",
+      icon: BookOpen,
+      description: "Manage book inventory",
+    },
+    {
+      label: "Categories",
+      href: "/dashboard/categories",
+      icon: Tags,
+      description: "Organize book categories",
+    },
+    {
+      label: "Users",
+      href: "/dashboard/users",
+      icon: Users,
+      description: "Manage library members",
+    },
+    {
+      label: "Borrowing",
+      href: "/dashboard/borrowing",
+      icon: BookMarked,
+      description: "Track borrowed books",
+    },
+    {
+      label: "Reports",
+      href: "/dashboard/reports",
+      icon: BarChart3,
+      description: "Analytics and reports",
+    },
+    {
+      label: "Reviews",
+      href: "/dashboard/reviews",
+      icon: MessageSquare,
+      description: "Manage book reviews",
+    },
+    {
+      label: "Events",
+      href: "/dashboard/events",
+      icon: Calendar,
+      description: "Library events",
+    },
+  ];
+
+  const superAdminMenuItems = [
+    {
+      label: "Admin Management",
+      href: "/dashboard/admin-management",
+      icon: Shield,
+      description: "Manage admin accounts",
+    },
+    {
+      label: "Activity Logs",
+      href: "/dashboard/activity-logs",
+      icon: Activity,
+      description: "System activity monitoring",
+    },
+  ];
+
+  const settingsMenuItems = [
+    {
+      label: "Profile",
+      href: "/dashboard/profile",
+      icon: User,
+      description: "Manage your profile",
+    },
+    {
+      label: "Settings",
+      href: "/dashboard/settings",
+      icon: Settings,
+      description: "System configuration",
+    },
+  ];
+
+  // Build menu based on user role
+  const menuItems = [
+    ...baseMenuItems,
+    ...(user?.role === "super_admin" ? superAdminMenuItems : []),
+    ...settingsMenuItems,
+  ];
 
   return (
     <ProtectedRoute>

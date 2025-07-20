@@ -6,10 +6,12 @@ export interface AdminUser {
   lastName: string;
   email?: string;
   phone?: string;
-  role: "admin" | "librarian";
+  role: "admin" | "librarian" | "super_admin";
   isActive: boolean;
   profilePicture?: string;
   membershipStatus: "active" | "suspended" | "expired";
+  isFirstLogin?: boolean;
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +28,7 @@ export interface AuthResponse {
     token: string;
   };
   message: string;
+  mustChangePassword?: boolean;
 }
 
 export interface ProfileResponse {
@@ -47,8 +50,12 @@ export const login = async (loginData: LoginData): Promise<AuthResponse> => {
   if (response.data.status === "success") {
     const user = response.data.data.user;
 
-    // Check if user has admin or librarian role
-    if (user.role === "admin" || user.role === "librarian") {
+    // Check if user has admin, librarian, or super_admin role
+    if (
+      user.role === "admin" ||
+      user.role === "librarian" ||
+      user.role === "super_admin"
+    ) {
       // Store token and user in localStorage for admin
       if (typeof window !== "undefined") {
         localStorage.setItem("admin-token", response.data.token);
@@ -64,7 +71,9 @@ export const login = async (loginData: LoginData): Promise<AuthResponse> => {
         message: "Login successful",
       };
     } else {
-      throw new Error("Access denied. Admin or Librarian privileges required.");
+      throw new Error(
+        "Access denied. Admin, Librarian, or Super Admin privileges required."
+      );
     }
   }
 

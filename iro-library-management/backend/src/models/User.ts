@@ -8,7 +8,7 @@ export interface IUser extends Document {
   email?: string;
   phone?: string;
   password: string;
-  role: "admin" | "librarian" | "member";
+  role: "super_admin" | "admin" | "librarian" | "member";
   profilePicture?: string;
   isActive: boolean;
   isEmailVerified: boolean;
@@ -20,6 +20,9 @@ export interface IUser extends Document {
   lastLogin?: Date;
   loginAttempts: number;
   lockUntil?: Date;
+  isFirstLogin: boolean;
+  createdBy?: string;
+  mustChangePassword: boolean;
   preferences: {
     notifications: {
       email: boolean;
@@ -93,7 +96,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["admin", "librarian", "member"],
+      enum: ["super_admin", "admin", "librarian", "member"],
       default: "member",
     },
     profilePicture: {
@@ -122,6 +125,18 @@ const userSchema = new Schema<IUser>(
       default: 0,
     },
     lockUntil: Date,
+    isFirstLogin: {
+      type: Boolean,
+      default: true,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
     preferences: {
       notifications: {
         email: { type: Boolean, default: true },

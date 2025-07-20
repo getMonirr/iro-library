@@ -11,7 +11,7 @@ export const getAllBooks = catchAsync(
       limit = 10,
       category,
       author,
-      language = "English",
+      language,
       search,
       sortBy = "createdAt",
       sortOrder = "desc",

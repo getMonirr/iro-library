@@ -305,6 +305,26 @@ const seedDatabase = async () => {
       console.log("Using existing admin user");
     }
 
+    // Create a super admin user if it doesn't exist
+    const superAdminUser = await User.findOne({ email: "superadmin@iro.com" });
+
+    if (!superAdminUser) {
+      await User.create({
+        firstName: "Super",
+        lastName: "Admin",
+        email: "superadmin@iro.com",
+        password: "superadmin123",
+        role: "super_admin",
+        isActive: true,
+        membershipStatus: "active",
+        isFirstLogin: false,
+        mustChangePassword: false,
+      });
+      console.log("Created super admin user");
+    } else {
+      console.log("Super admin user already exists");
+    }
+
     // Add metadata to books
     const booksWithMetadata = sampleBooks.map((book) => ({
       ...book,
