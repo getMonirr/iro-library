@@ -36,6 +36,22 @@ api.interceptors.response.use(
         window.location.href = "/auth/login";
       }
     }
+
+    // Extract error message from response
+    if (error.response?.data?.message) {
+      error.message = error.response.data.message;
+    } else if (error.response?.data?.errors) {
+      // Handle validation errors
+      const validationErrors = error.response.data.errors;
+      if (Array.isArray(validationErrors)) {
+        error.message = validationErrors
+          .map((err: any) => err.msg || err.message)
+          .join(", ");
+      } else {
+        error.message = validationErrors.toString();
+      }
+    }
+
     return Promise.reject(error);
   }
 );

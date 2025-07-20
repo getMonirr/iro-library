@@ -3,42 +3,90 @@ import api from "@/lib/api";
 export interface Book {
   _id: string;
   title: string;
+  subtitle?: string;
   authors: string[];
   isbn?: string;
+  isbn13?: string;
+  publisher?: string;
+  publishedDate?: string;
+  language?: string;
+  pages?: number;
   description?: string;
-  category: string;
-  publishedYear?: number;
+  categories: string[];
+  tags: string[];
+  coverImage?: string;
+  thumbnailImage?: string;
+  format: "physical" | "digital" | "both";
+  digitalFormats: ("pdf" | "epub" | "mobi" | "audiobook")[];
+  fileUrl?: string;
+  audioUrl?: string;
   totalCopies: number;
   availableCopies: number;
-  format: "physical" | "digital" | "both";
-  location?: {
+  location: {
     shelf: string;
     section: string;
+    floor?: string;
   };
-  coverImage?: string;
-  tags?: string[];
-  rating?: number;
-  totalRatings?: number;
-  isFeatured?: boolean;
+  acquisitionInfo: {
+    acquisitionDate: string;
+    source: "purchase" | "donation" | "exchange" | "other";
+    cost?: number;
+    donor?: string;
+    notes?: string;
+  };
+  condition: "excellent" | "good" | "fair" | "poor" | "damaged";
+  rating: {
+    average: number;
+    count: number;
+  };
+  statistics: {
+    views: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    borrows: number;
+  };
+  isActive: boolean;
+  isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateBookData {
   title: string;
+  subtitle?: string;
   authors: string[];
   isbn?: string;
+  isbn13?: string;
+  publisher?: string;
+  publishedDate?: string;
+  language?: string;
+  pages?: number;
   description?: string;
-  category: string;
-  publishedYear?: number;
-  totalCopies: number;
+  categories: string[];
+  tags: string[];
+  coverImage?: string;
+  thumbnailImage?: string;
   format: "physical" | "digital" | "both";
-  location?: {
+  digitalFormats?: ("pdf" | "epub" | "mobi" | "audiobook")[];
+  fileUrl?: string;
+  audioUrl?: string;
+  totalCopies: number;
+  availableCopies: number;
+  location: {
     shelf: string;
     section: string;
+    floor?: string;
   };
-  coverImage?: string;
-  tags?: string[];
+  acquisitionInfo?: {
+    acquisitionDate: string;
+    source: "purchase" | "donation" | "exchange" | "other";
+    cost?: number;
+    donor?: string;
+    notes?: string;
+  };
+  condition?: "excellent" | "good" | "fair" | "poor" | "damaged";
+  isActive?: boolean;
   isFeatured?: boolean;
 }
 
@@ -119,8 +167,13 @@ export const getBook = async (id: string): Promise<BookResponse> => {
 export const createBook = async (
   bookData: CreateBookData
 ): Promise<BookResponse> => {
-  const response = await api.post("/books", bookData);
-  return response.data;
+  try {
+    const response = await api.post("/books", bookData);
+    return response.data;
+  } catch (error: any) {
+    console.error("Create book error:", error);
+    throw error;
+  }
 };
 
 // Update book
@@ -128,8 +181,13 @@ export const updateBook = async (
   id: string,
   bookData: UpdateBookData
 ): Promise<BookResponse> => {
-  const response = await api.patch(`/books/${id}`, bookData);
-  return response.data;
+  try {
+    const response = await api.patch(`/books/${id}`, bookData);
+    return response.data;
+  } catch (error: any) {
+    console.error("Update book error:", error);
+    throw error;
+  }
 };
 
 // Delete book

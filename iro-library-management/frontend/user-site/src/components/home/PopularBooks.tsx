@@ -1,31 +1,11 @@
 "use client";
 
-import { Book, getPopularBooks } from "@/services/bookService";
-import { useEffect, useState } from "react";
+import { usePopularBooksQuery } from "@/hooks/useBooks";
 
 export function PopularBooks() {
-  const [popularBooks, setPopularBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: response, isLoading: loading, error } = usePopularBooksQuery();
 
-  useEffect(() => {
-    const fetchPopularBooks = async () => {
-      try {
-        setLoading(true);
-        const response = await getPopularBooks();
-        if (response.success) {
-          setPopularBooks(response.data.books.slice(0, 5)); // Show only 5 popular books
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch popular books");
-        console.error("Error fetching popular books:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPopularBooks();
-  }, []);
+  const popularBooks = response?.data?.books?.slice(0, 5) || [];
 
   if (loading) {
     return (
@@ -68,7 +48,9 @@ export function PopularBooks() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Popular Books
             </h2>
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-red-600 dark:text-red-400">
+              {error?.message || "Failed to load popular books"}
+            </p>
           </div>
         </div>
       </section>
@@ -116,7 +98,7 @@ export function PopularBooks() {
                   <div className="flex items-center">
                     <span className="text-yellow-500">★</span>
                     <span className="text-gray-600 dark:text-gray-300 ml-1">
-                      {book.rating?.toFixed(1) || "N/A"}
+                      {book?.rating?.average?.toFixed(1) || "N/A"}
                     </span>
                   </div>
                 </div>

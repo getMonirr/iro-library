@@ -1,27 +1,13 @@
 "use client";
 
 import { AuthProvider } from "@/contexts/AuthContext";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "next-themes";
-import { useState } from "react";
 import { Toaster } from "react-hot-toast";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000, // 1 minute
-            retry: 1,
-            refetchOnWindowFocus: false,
-          },
-        },
-      })
-  );
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryProvider>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
           {children}
@@ -50,6 +36,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           />
         </AuthProvider>
       </ThemeProvider>
-    </QueryClientProvider>
+    </QueryProvider>
   );
 }

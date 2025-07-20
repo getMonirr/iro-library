@@ -1,50 +1,17 @@
 "use client";
 
-import { getLibraryStats } from "@/services/bookService";
-import { useEffect, useState } from "react";
-
-interface LibraryStats {
-  totalBooks: number;
-  totalBorrows: number;
-  totalMembers: number;
-  totalCategories: number;
-}
+import { useLibraryStatsQuery } from "@/hooks/useBooks";
 
 export function Stats() {
-  const [stats, setStats] = useState<LibraryStats>({
-    totalBooks: 0,
-    totalBorrows: 0,
-    totalMembers: 0,
-    totalCategories: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: response, isLoading: loading, error } = useLibraryStatsQuery();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const response = await getLibraryStats();
-        if (response.success) {
-          setStats(response.data);
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch statistics");
-        console.error("Error fetching stats:", err);
-        // Use fallback static data on error
-        setStats({
-          totalBooks: 10000,
-          totalBorrows: 15000,
-          totalMembers: 2500,
-          totalCategories: 50,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  // Use actual data or fallback on error
+  const stats = response?.data || {
+    totalBooks: 10000,
+    totalBorrows: 15000,
+    totalMembers: 2500,
+    totalCategories: 50,
+  };
 
   const displayStats = [
     { label: "Total Books", value: `${stats.totalBooks.toLocaleString()}+` },

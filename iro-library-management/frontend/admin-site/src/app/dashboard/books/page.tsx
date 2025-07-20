@@ -1,152 +1,182 @@
 "use client";
 
+import { BookForm } from "@/components/books/BookForm";
 import { BooksTable } from "@/components/books/BooksTable";
 import {
-  Book,
-  deleteBook,
-  getBookCategories,
-  getBooks,
-} from "@/services/bookService";
-import { BookOpen, Download, Filter, Plus, Search, Upload } from "lucide-react";
+  useBooksQuery,
+  useCreateBookMutation,
+  useDeleteBookMutation,
+  useUpdateBookMutation,
+} from "@/hooks/useBooks";
+import { Book, CreateBookData, UpdateBookData } from "@/services/bookService";
+import { BookOpen, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function BooksPage() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch books and categories
+  // Debounce search query
   useEffect(() => {
-    fetchBooks();
-    fetchCategories();
-  }, [currentPage, searchQuery]);
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500);
 
-  const fetchBooks = async () => {
-    try {
-      setLoading(true);
-      const response = await getBooks({
-        page: currentPage,
-        limit: 10,
-        search: searchQuery || undefined,
-      });
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-      if (response.success) {
-        setBooks(response.data.books);
-        setTotalPages(response.data.pagination.totalPages);
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch books");
-      toast.error("Failed to fetch books");
-    } finally {
-      setLoading(false);
-    }
+  // React Query hooks
+  const {
+    data: booksResponse,
+    isLoading: loading,
+    error,
+    refetch: fetchBooks,
+  } = useBooksQuery({
+    page: currentPage,
+    limit: 20, // Increased from 10 to 20 to show more books per page
+    search: debouncedSearchQuery || undefined,
+  });
+
+  const createBookMutation = useCreateBookMutation({
+    onSuccess: () => {
+      setShowAddModal(false);
+    },
+  });
+
+  const updateBookMutation = useUpdateBookMutation({
+    onSuccess: () => {
+      setShowEditModal(false);
+      setSelectedBook(null);
+    },
+  });
+
+  const deleteBookMutation = useDeleteBookMutation();
+
+  // Extract data from response
+  const books = booksResponse?.data?.books || [];
+  const totalPages = booksResponse?.data?.pagination?.totalPages || 1;
+  const totalBooksCount = booksResponse?.data?.pagination?.totalBooks || 0;
+
+  const handleCreateBook = async (
+    bookData: CreateBookData | UpdateBookData
+  ) => {
+    createBookMutation.mutate(bookData as CreateBookData);
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await getBookCategories();
-      if (response.success) {
-        setCategories(response.data);
-      }
-    } catch (err: any) {
-      console.error("Error fetching categories:", err);
+  const handleUpdateBook = async (
+    bookData: CreateBookData | UpdateBookData
+  ) => {
+    if (!selectedBook) return;
+    updateBookMutation.mutate({
+      id: selectedBook._id,
+      data: bookData as UpdateBookData,
+    });
+  };
+
+  const handleEditBook = (bookId: string) => {
+    const book = books.find((b) => b._id === bookId);
+    if (book) {
+      setSelectedBook(book);
+      setShowEditModal(true);
     }
   };
 
   const handleDeleteBook = async (bookId: string) => {
     if (!confirm("Are you sure you want to delete this book?")) return;
-
-    try {
-      const response = await deleteBook(bookId);
-      if (response.success) {
-        toast.success("Book deleted successfully");
-        fetchBooks(); // Refresh the list
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete book");
-    }
-  };
-
-  const handleEditBook = (bookId: string) => {
-    // TODO: Implement edit functionality
-    console.log("Edit book:", bookId);
-    toast("Edit functionality coming soon");
+    deleteBookMutation.mutate(bookId);
   };
 
   const handleViewBook = (bookId: string) => {
-    // TODO: Implement view functionality
-    console.log("View book:", bookId);
-    toast("View functionality coming soon");
+    // For now, just show an alert. You can implement a detailed view later
+    toast("Book details view coming soon!", { icon: "ℹ️" });
   };
 
-  const handleAddBookSuccess = () => {
-    setShowAddModal(false);
-    fetchBooks(); // Refresh the list
-    toast.success("Book added successfully");
-  };
-
-  // Calculate stats from current books
-  const totalBooks = books.reduce((sum, book) => sum + book.totalCopies, 0);
-  const availableBooks = books.reduce(
-    (sum, book) => sum + book.availableCopies,
+  // Calculate statistics from current page
+  const totalBooks = books.reduce(
+    (sum: number, book: Book) => sum + book.totalCopies,
     0
   );
-  const borrowedBooks = totalBooks - availableBooks;
-
-  const filteredBooks = books.filter(
-    (book) =>
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.authors.some((author) =>
-        author.toLowerCase().includes(searchQuery.toLowerCase())
-      ) ||
-      (book.isbn && book.isbn.includes(searchQuery))
+  const availableBooks = books.reduce(
+    (sum: number, book: Book) => sum + book.availableCopies,
+    0
   );
 
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Books Management
-          </h1>
-          <p className="mt-1 text-gray-600 dark:text-gray-300">
-            Manage your library's book collection
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">
+          <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
+            Error Loading Books
+          </h3>
+          <p className="text-red-600 dark:text-red-300">
+            {error.message || "Failed to load books"}
           </p>
-        </div>
-
-        <div className="mt-4 sm:mt-0 flex space-x-3">
-          <button onClick={() => setShowAddModal(true)} className="btn-primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Book
-          </button>
-          <button className="btn-outline">
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </button>
-          <button className="btn-outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <button
+            onClick={() => fetchBooks()}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Try Again
           </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="card">
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+        <div className="flex items-center gap-3 mb-4 lg:mb-0">
+          <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Books Management
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manage your library collection
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Add New Book
+        </button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center">
-            <BookOpen className="h-8 w-8 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Total Books
+              </p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                {totalBooksCount}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <BookOpen className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total Copies
               </p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {totalBooks}
@@ -154,13 +184,14 @@ export default function BooksPage() {
             </div>
           </div>
         </div>
-
-        <div className="card">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center">
-            <BookOpen className="h-8 w-8 text-green-600" />
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+              <BookOpen className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Available
+                Available Copies
               </p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {availableBooks}
@@ -168,96 +199,129 @@ export default function BooksPage() {
             </div>
           </div>
         </div>
-
-        <div className="card">
-          <div className="flex items-center">
-            <BookOpen className="h-8 w-8 text-orange-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Borrowed
-              </p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {borrowedBooks}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center">
-            <BookOpen className="h-8 w-8 text-purple-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Categories
-              </p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {categories.length}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="card">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search books by title, author, or ISBN..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search books by title, author, or ISBN..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+            {searchQuery !== debouncedSearchQuery && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="btn-outline"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </button>
         </div>
-
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-sm text-gray-500">
-              Filters will be implemented here
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Books Table */}
-      <div className="card">
-        <BooksTable
-          books={filteredBooks}
-          onEdit={handleEditBook}
-          onDelete={handleDeleteBook}
-          onView={handleViewBook}
-        />
-      </div>
-
-      {/* Add Book Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg">
-            <h2 className="text-lg font-semibold mb-4">Add New Book</h2>
-            <p className="text-gray-600 mb-4">
-              Add book modal will be implemented here
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Loading books...
+            </p>
+          </div>
+        ) : books.length === 0 ? (
+          <div className="p-8 text-center">
+            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              No books found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {searchQuery
+                ? "No books match your search criteria."
+                : "Get started by adding your first book."}
             </p>
             <button
-              onClick={() => setShowAddModal(false)}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Close
+              Add Your First Book
+            </button>
+          </div>
+        ) : (
+          <BooksTable
+            books={books}
+            onEdit={handleEditBook}
+            onDelete={handleDeleteBook}
+            onView={handleViewBook}
+          />
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {books.length} of {totalBooksCount} books
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              First
+            </button>
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 text-gray-600 dark:text-gray-400">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Next
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Last
             </button>
           </div>
         </div>
       )}
+
+      {/* Add Book Modal */}
+      <BookForm
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleCreateBook}
+        loading={createBookMutation.isPending}
+      />
+
+      {/* Edit Book Modal */}
+      <BookForm
+        book={selectedBook || undefined}
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedBook(null);
+        }}
+        onSubmit={handleUpdateBook}
+        loading={updateBookMutation.isPending}
+      />
     </div>
   );
 }

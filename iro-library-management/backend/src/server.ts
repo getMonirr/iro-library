@@ -18,6 +18,7 @@ import borrowRoutes from "./routes/borrow.routes";
 import commentRoutes from "./routes/comment.routes";
 import reactionRoutes from "./routes/reaction.routes";
 import userRoutes from "./routes/user.routes";
+import seedDatabase from "./scripts/seedBooks";
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use((req, res, next) => {
 
 // Health check endpoint
 app.get("/health", (req, res) => {
+  seedDatabase();
   res.status(200).json({
     status: "success",
     message: "IRO Library Management System API is running",

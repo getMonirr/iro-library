@@ -17,7 +17,10 @@ export interface Book {
   };
   coverImage?: string;
   tags?: string[];
-  rating?: number;
+  rating?: {
+    average: number;
+    count: number;
+  };
   totalRatings?: number;
   isFeatured?: boolean;
   createdAt: string;

@@ -1,31 +1,13 @@
 "use client";
 
-import { Book, getFeaturedBooks } from "@/services/bookService";
-import { useEffect, useState } from "react";
+import { useFeaturedBooksQuery } from "@/hooks/useBooks";
 
 export function FeaturedBooks() {
-  const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: response, isLoading: loading, error } = useFeaturedBooksQuery();
 
-  useEffect(() => {
-    const fetchFeaturedBooks = async () => {
-      try {
-        setLoading(true);
-        const response = await getFeaturedBooks();
-        if (response.success) {
-          setFeaturedBooks(response.data.books.slice(0, 4)); // Show only 4 featured books
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch featured books");
-        console.error("Error fetching featured books:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const featuredBooks = response?.data?.books?.slice(0, 4) || [];
 
-    fetchFeaturedBooks();
-  }, []);
+  console.log("Featured Books Response:", response);
 
   if (loading) {
     return (
@@ -66,7 +48,9 @@ export function FeaturedBooks() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Featured Books
             </h2>
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-red-600 dark:text-red-400">
+              {error?.message || "Failed to load featured books"}
+            </p>
           </div>
         </div>
       </section>
@@ -118,7 +102,7 @@ export function FeaturedBooks() {
                 <div className="flex items-center">
                   <span className="text-yellow-500">★</span>
                   <span className="text-sm text-gray-600 dark:text-gray-300 ml-1">
-                    {book.rating?.toFixed(1) || "N/A"}
+                    {book?.rating?.average?.toFixed(1) || "N/A"}
                   </span>
                 </div>
               </div>
