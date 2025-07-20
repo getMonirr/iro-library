@@ -661,3 +661,9 @@
 {"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-07-20 21:14:19"}
 {"level":"info","message":"Server running in development mode on port 5000","service":"iro-library-api","timestamp":"2025-07-20 21:19:34"}
 {"level":"info","message":"MongoDB Connected: ac-dadad0w-shard-00-01.d7lse9s.mongodb.net","service":"iro-library-api","timestamp":"2025-07-20 21:19:38"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-07-20 21:19:45"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-07-20 21:20:28"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-07-20 21:20:31"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-07-20 21:20:34"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-07-20 21:20:42"}
+{"level":"warn","message":"MongoDB disconnected","service":"iro-library-api","timestamp":"2025-07-20 21:51:52"}
