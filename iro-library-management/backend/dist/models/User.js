@@ -82,7 +82,7 @@ const userSchema = new mongoose_1.Schema({
     },
     role: {
         type: String,
-        enum: ["admin", "librarian", "member"],
+        enum: ["super_admin", "admin", "librarian", "member"],
         default: "member",
     },
     profilePicture: {
@@ -111,6 +111,18 @@ const userSchema = new mongoose_1.Schema({
         default: 0,
     },
     lockUntil: Date,
+    isFirstLogin: {
+        type: Boolean,
+        default: true,
+    },
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "User",
+    },
+    mustChangePassword: {
+        type: Boolean,
+        default: false,
+    },
     preferences: {
         notifications: {
             email: { type: Boolean, default: true },

@@ -39,6 +39,14 @@ exports.authenticate = (0, errorHandler_1.catchAsync)(async (req, res, next) => 
             message: "Your account is temporarily locked due to too many failed login attempts.",
         });
     }
+    if (currentUser.mustChangePassword &&
+        !req.path.includes("/change-first-login-password")) {
+        return res.status(403).json({
+            status: "error",
+            message: "You must change your password before accessing other features.",
+            code: "MUST_CHANGE_PASSWORD",
+        });
+    }
     req.user = currentUser;
     return next();
 });

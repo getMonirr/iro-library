@@ -3,6 +3,8 @@ import { validationResult } from "express-validator";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { catchAsync } from "../middleware/errorHandler";
 import Book from "../models/Book";
+import Category from "../models/Category";
+import Publisher from "../models/Publisher";
 
 export const getAllBooks = catchAsync(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -15,12 +17,17 @@ export const getAllBooks = catchAsync(
       search,
       sortBy = "createdAt",
       sortOrder = "desc",
-      isActive = true,
+      isActive,
       isFeatured,
     } = req.query;
 
     // Build filter object
-    const filter: any = { isActive };
+    const filter: any = {};
+
+    // Only filter by isActive if explicitly provided
+    if (isActive !== undefined) {
+      filter.isActive = isActive === "true";
+    }
 
     if (category) {
       filter.categories = { $in: [category] };
@@ -44,6 +51,8 @@ export const getAllBooks = catchAsync(
         { authors: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
         { tags: { $regex: search, $options: "i" } },
+        { isbn: { $regex: search, $options: "i" } },
+        { isbn13: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -292,7 +301,7 @@ export const searchBooks = catchAsync(
       isActive: true,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       status: "success",
       results: books.length,
       pagination: {
@@ -302,6 +311,30 @@ export const searchBooks = catchAsync(
       },
       data: {
         books,
+      },
+    });
+  }
+);
+
+export const getBookFormData = catchAsync(
+  async (req: AuthenticatedRequest, res: Response) => {
+    // Get active categories and publishers for form dropdowns
+    const [categories, publishers] = await Promise.all([
+      Category.find({ isActive: true })
+        .select("name description slug")
+        .sort({ name: 1 })
+        .lean(),
+      Publisher.find({ isActive: true })
+        .select("name description website")
+        .sort({ name: 1 })
+        .lean(),
+    ]);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        categories,
+        publishers,
       },
     });
   }

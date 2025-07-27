@@ -1,5 +1,7 @@
 "use client";
 
+import { SearchableSelect } from "@/components/ui";
+import { useBookFormDataQuery } from "@/hooks/useBookForm";
 import { Book, CreateBookData, UpdateBookData } from "@/services/bookService";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -60,26 +62,13 @@ export function BookForm({
   const [authorInput, setAuthorInput] = useState("");
   const [tagInput, setTagInput] = useState("");
 
-  // Categories for the dropdown
-  const categories = [
-    "Quran & Tafsir",
-    "Hadith",
-    "Fiqh",
-    "Aqeedah",
-    "History",
-    "Biography",
-    "Islamic Philosophy",
-    "Arabic Language",
-    "Islamic Art",
-    "Contemporary Issues",
-    "Children Books",
-    "General Knowledge",
-    "Science & Technology",
-    "Health & Medicine",
-    "Education",
-    "Literature",
-    "Research & Reference",
-  ];
+  // Get form data (categories and publishers)
+  const { data: bookFormData, isLoading: isLoadingFormData } =
+    useBookFormDataQuery();
+
+  // Extract categories and publishers from API
+  const categories = bookFormData?.data?.categories || [];
+  const publishers = bookFormData?.data?.publishers || [];
 
   useEffect(() => {
     if (book) {
@@ -253,6 +242,15 @@ export function BookForm({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {isLoadingFormData && (
+            <div className="flex items-center justify-center p-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-sm text-gray-600">
+                Loading form data...
+              </span>
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -345,29 +343,35 @@ export function BookForm({
           </div>
 
           {/* Category Row */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Category *
-            </label>
-            <select
-              value={formData.categories[0] || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  categories: e.target.value ? [e.target.value] : [],
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              required
-            >
-              <option value="">Select category</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Category"
+            options={categories}
+            value={formData.categories[0] || ""}
+            onChange={(value) =>
+              setFormData({
+                ...formData,
+                categories: value ? [value] : [],
+              })
+            }
+            placeholder="Select a category..."
+            required
+            loading={isLoadingFormData}
+          />
+
+          {/* Publisher */}
+          <SearchableSelect
+            label="Publisher"
+            options={publishers}
+            value={formData.publisher || ""}
+            onChange={(value) =>
+              setFormData({
+                ...formData,
+                publisher: value,
+              })
+            }
+            placeholder="Select a publisher..."
+            loading={isLoadingFormData}
+          />
 
           {/* Description */}
           <div>

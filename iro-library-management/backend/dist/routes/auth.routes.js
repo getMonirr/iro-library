@@ -69,7 +69,6 @@ const updatePasswordValidation = [
         .notEmpty()
         .withMessage("Password confirmation is required"),
 ];
-router.post("/signup", signupValidation, auth_controller_1.signup);
 router.post("/login", loginValidation, auth_controller_1.login);
 router.post("/logout", auth_controller_1.logout);
 router.post("/forgot-password", forgotPasswordValidation, auth_controller_1.forgotPassword);

@@ -18,9 +18,12 @@ const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const book_routes_1 = __importDefault(require("./routes/book.routes"));
 const borrow_routes_1 = __importDefault(require("./routes/borrow.routes"));
+const category_routes_1 = __importDefault(require("./routes/category.routes"));
 const comment_routes_1 = __importDefault(require("./routes/comment.routes"));
+const publisher_routes_1 = __importDefault(require("./routes/publisher.routes"));
 const reaction_routes_1 = __importDefault(require("./routes/reaction.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const seedBooks_1 = __importDefault(require("./scripts/seedBooks"));
 const app = (0, express_1.default)();
 (0, database_1.connectDB)();
 app.use((0, helmet_1.default)());
@@ -54,6 +57,7 @@ app.use((req, res, next) => {
     next();
 });
 app.get("/health", (req, res) => {
+    (0, seedBooks_1.default)();
     res.status(200).json({
         status: "success",
         message: "IRO Library Management System API is running",
@@ -64,6 +68,8 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", auth_routes_1.default);
 app.use("/api/users", user_routes_1.default);
 app.use("/api/books", book_routes_1.default);
+app.use("/api/categories", category_routes_1.default);
+app.use("/api/publishers", publisher_routes_1.default);
 app.use("/api/borrows", borrow_routes_1.default);
 app.use("/api/reactions", reaction_routes_1.default);
 app.use("/api/comments", comment_routes_1.default);

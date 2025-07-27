@@ -15,7 +15,9 @@ import adminRoutes from "./routes/admin.routes";
 import authRoutes from "./routes/auth.routes";
 import bookRoutes from "./routes/book.routes";
 import borrowRoutes from "./routes/borrow.routes";
+import categoryRoutes from "./routes/category.routes";
 import commentRoutes from "./routes/comment.routes";
+import publisherRoutes from "./routes/publisher.routes";
 import reactionRoutes from "./routes/reaction.routes";
 import userRoutes from "./routes/user.routes";
 import seedDatabase from "./scripts/seedBooks";
@@ -91,6 +93,8 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/books", bookRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/publishers", publisherRoutes);
 app.use("/api/borrows", borrowRoutes);
 app.use("/api/reactions", reactionRoutes);
 app.use("/api/comments", commentRoutes);

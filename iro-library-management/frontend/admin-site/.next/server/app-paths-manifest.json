@@ -1,7 +1,3 @@
 {
-  "/auth/login/page": "app/auth/login/page.js",
-  "/dashboard/admin-management/page": "app/dashboard/admin-management/page.js",
-  "/dashboard/books/page": "app/dashboard/books/page.js",
-  "/dashboard/books/edit/[id]/page": "app/dashboard/books/edit/[id]/page.js",
-  "/dashboard/profile/page": "app/dashboard/profile/page.js"
+  "/dashboard/books/add/page": "app/dashboard/books/add/page.js"
 }

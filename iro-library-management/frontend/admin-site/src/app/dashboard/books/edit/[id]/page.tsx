@@ -1,5 +1,7 @@
 "use client";
 
+import { SearchableSelect } from "@/components/ui";
+import { useBookFormDataQuery } from "@/hooks/useBookForm";
 import { useBookQuery, useUpdateBookMutation } from "@/hooks/useBooks";
 import { UpdateBookData } from "@/services/bookService";
 import { ArrowLeft, Book, Save, X } from "lucide-react";
@@ -7,26 +9,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-
-const CATEGORIES = [
-  "Quran & Tafsir",
-  "Hadith",
-  "Fiqh",
-  "Aqeedah",
-  "History",
-  "Biography",
-  "Islamic Philosophy",
-  "Arabic Language",
-  "Islamic Art",
-  "Contemporary Issues",
-  "Children Books",
-  "General Knowledge",
-  "Science & Technology",
-  "Health & Medicine",
-  "Education",
-  "Literature",
-  "Research & Reference",
-];
 
 const DIGITAL_FORMATS = ["pdf", "epub", "mobi", "audiobook"];
 const SOURCES = ["purchase", "donation", "exchange", "other"];
@@ -47,6 +29,9 @@ export default function EditBookPage({ params }: EditBookPageProps) {
       router.push("/dashboard/books");
     },
   });
+
+  const { data: formOptions, isLoading: isLoadingOptions } =
+    useBookFormDataQuery();
 
   const [formData, setFormData] = useState<UpdateBookData>({});
 
@@ -346,12 +331,14 @@ export default function EditBookPage({ params }: EditBookPageProps) {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Publisher
               </label>
-              <input
-                type="text"
-                name="publisher"
+              <SearchableSelect
+                options={formOptions?.data?.publishers || []}
                 value={formData.publisher || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, publisher: value }))
+                }
+                placeholder="Select a publisher..."
+                loading={isLoadingOptions}
               />
             </div>
 
@@ -420,21 +407,18 @@ export default function EditBookPage({ params }: EditBookPageProps) {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Categories *
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {CATEGORIES.map((category) => (
-                <label key={category} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={(formData.categories || []).includes(category)}
-                    onChange={() => handleCategoriesChange(category)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {category}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <SearchableSelect
+              options={formOptions?.data?.categories || []}
+              value={(formData.categories && formData.categories[0]) || ""}
+              onChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  categories: value ? [value] : [],
+                }))
+              }
+              placeholder="Select a category..."
+              loading={isLoadingOptions}
+            />
           </div>
 
           <div>

@@ -6,7 +6,7 @@ export interface IUser extends Document {
     email?: string;
     phone?: string;
     password: string;
-    role: "admin" | "librarian" | "member";
+    role: "super_admin" | "admin" | "librarian" | "member";
     profilePicture?: string;
     isActive: boolean;
     isEmailVerified: boolean;
@@ -18,6 +18,9 @@ export interface IUser extends Document {
     lastLogin?: Date;
     loginAttempts: number;
     lockUntil?: Date;
+    isFirstLogin: boolean;
+    createdBy?: string;
+    mustChangePassword: boolean;
     preferences: {
         notifications: {
             email: boolean;

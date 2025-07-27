@@ -20,6 +20,7 @@ export default function BooksPage() {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [goToPage, setGoToPage] = useState("");
 
   // Debounce search query
   useEffect(() => {
@@ -47,17 +48,49 @@ export default function BooksPage() {
     sort: `${sortOrder === "desc" ? "-" : ""}${sortBy}`,
   });
 
-  // Debug logging
-  console.log("Books Response:", booksResponse);
-  console.log("Books Array:", booksResponse?.data?.books);
-  console.log("Total Books Count:", booksResponse?.pagination?.totalBooks);
-
   const deleteBookMutation = useDeleteBookMutation();
 
   // Extract data from response
   const books = booksResponse?.data?.books || [];
   const totalPages = booksResponse?.pagination?.totalPages || 1;
   const totalBooksCount = booksResponse?.pagination?.totalBooks || 0;
+
+  // Keyboard navigation for pagination
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only handle pagination keys if no input is focused
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "SELECT"
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowLeft":
+          if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+          }
+          break;
+        case "ArrowRight":
+          if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+          }
+          break;
+        case "Home":
+          setCurrentPage(1);
+          break;
+        case "End":
+          setCurrentPage(totalPages);
+          break;
+      }
+    };
+
+    if (totalPages > 1) {
+      window.addEventListener("keydown", handleKeyPress);
+      return () => window.removeEventListener("keydown", handleKeyPress);
+    }
+  }, [currentPage, totalPages]);
 
   const handleEditBook = (bookId: string) => {
     router.push(`/dashboard/books/edit/${bookId}`);
@@ -87,6 +120,17 @@ export default function BooksPage() {
         isActive ? "active" : "inactive"
       } status`
     );
+  };
+
+  const handleGoToPage = (e: React.FormEvent) => {
+    e.preventDefault();
+    const pageNum = parseInt(goToPage);
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum);
+      setGoToPage("");
+    } else {
+      toast.error(`Please enter a page number between 1 and ${totalPages}`);
+    }
   };
 
   const handleExportBooks = () => {
@@ -481,128 +525,191 @@ export default function BooksPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, totalBooksCount)} of{" "}
-            {totalBooksCount} books
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-            >
-              First
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-            >
-              Previous
-            </button>
+      {books.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mt-6 p-4">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, totalBooksCount)} of{" "}
+                {totalBooksCount} books
+              </div>
 
-            {/* Page numbers */}
-            <div className="flex items-center gap-1">
-              {(() => {
-                const maxVisiblePages = 5;
-                const halfVisible = Math.floor(maxVisiblePages / 2);
-                let startPage = Math.max(1, currentPage - halfVisible);
-                let endPage = Math.min(totalPages, currentPage + halfVisible);
-
-                // Adjust if we're near the beginning or end
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                  if (startPage === 1) {
-                    endPage = Math.min(
-                      totalPages,
-                      startPage + maxVisiblePages - 1
-                    );
-                  } else {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                  }
-                }
-
-                const pages = [];
-
-                // Add ellipsis if needed at start
-                if (startPage > 1) {
-                  pages.push(
-                    <button
-                      key={1}
-                      onClick={() => setCurrentPage(1)}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-                    >
-                      1
-                    </button>
-                  );
-                  if (startPage > 2) {
-                    pages.push(
-                      <span key="ellipsis1" className="px-2 text-gray-500">
-                        ...
-                      </span>
-                    );
-                  }
-                }
-
-                // Add visible page numbers
-                for (let i = startPage; i <= endPage; i++) {
-                  pages.push(
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i)}
-                      className={`px-3 py-2 border rounded-md text-sm ${
-                        i === currentPage
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
-                    >
-                      {i}
-                    </button>
-                  );
-                }
-
-                // Add ellipsis if needed at end
-                if (endPage < totalPages) {
-                  if (endPage < totalPages - 1) {
-                    pages.push(
-                      <span key="ellipsis2" className="px-2 text-gray-500">
-                        ...
-                      </span>
-                    );
-                  }
-                  pages.push(
-                    <button
-                      key={totalPages}
-                      onClick={() => setCurrentPage(totalPages)}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-                    >
-                      {totalPages}
-                    </button>
-                  );
-                }
-
-                return pages;
-              })()}
+              {/* Page size selector in pagination */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Show:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  per page
+                </span>
+              </div>
             </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+              >
+                First
+              </button>
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+              >
+                Previous
+              </button>
 
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-            >
-              Next
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-            >
-              Last
-            </button>
+              {/* Page numbers */}
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const maxVisiblePages = 5;
+                  const halfVisible = Math.floor(maxVisiblePages / 2);
+                  let startPage = Math.max(1, currentPage - halfVisible);
+                  let endPage = Math.min(totalPages, currentPage + halfVisible);
+
+                  // Adjust if we're near the beginning or end
+                  if (endPage - startPage + 1 < maxVisiblePages) {
+                    if (startPage === 1) {
+                      endPage = Math.min(
+                        totalPages,
+                        startPage + maxVisiblePages - 1
+                      );
+                    } else {
+                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+                  }
+
+                  const pages = [];
+
+                  // Add ellipsis if needed at start
+                  if (startPage > 1) {
+                    pages.push(
+                      <button
+                        key={1}
+                        onClick={() => setCurrentPage(1)}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+                      >
+                        1
+                      </button>
+                    );
+                    if (startPage > 2) {
+                      pages.push(
+                        <span key="ellipsis1" className="px-2 text-gray-500">
+                          ...
+                        </span>
+                      );
+                    }
+                  }
+
+                  // Add visible page numbers
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`px-3 py-2 border rounded-md text-sm ${
+                          i === currentPage
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+
+                  // Add ellipsis if needed at end
+                  if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                      pages.push(
+                        <span key="ellipsis2" className="px-2 text-gray-500">
+                          ...
+                        </span>
+                      );
+                    }
+                    pages.push(
+                      <button
+                        key={totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+                      >
+                        {totalPages}
+                      </button>
+                    );
+                  }
+
+                  return pages;
+                })()}
+              </div>
+
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+              >
+                Next
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+              >
+                Last
+              </button>
+
+              {/* Go to page input */}
+              {totalPages > 10 && (
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-300 dark:border-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Go to:
+                  </span>
+                  <form onSubmit={handleGoToPage} className="flex gap-1">
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={goToPage}
+                      onChange={(e) => setGoToPage(e.target.value)}
+                      placeholder="Page"
+                      className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <button
+                      type="submit"
+                      className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Go
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Keyboard shortcuts info */}
+              <div className="ml-4 pl-4 border-l border-gray-300 dark:border-gray-600">
+                <div
+                  className="text-xs text-gray-500 dark:text-gray-400 cursor-help"
+                  title="Keyboard shortcuts: ← → arrows to navigate, Home/End for first/last page"
+                >
+                  ⌨️ Shortcuts
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

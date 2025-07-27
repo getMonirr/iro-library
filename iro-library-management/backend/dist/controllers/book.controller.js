@@ -3,13 +3,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchBooks = exports.getBookCategories = exports.getPopularBooks = exports.getFeaturedBooks = exports.deleteBook = exports.updateBook = exports.createBook = exports.getBook = exports.getAllBooks = void 0;
+exports.getBookFormData = exports.searchBooks = exports.getBookCategories = exports.getPopularBooks = exports.getFeaturedBooks = exports.deleteBook = exports.updateBook = exports.createBook = exports.getBook = exports.getAllBooks = void 0;
 const express_validator_1 = require("express-validator");
 const errorHandler_1 = require("../middleware/errorHandler");
 const Book_1 = __importDefault(require("../models/Book"));
+const Category_1 = __importDefault(require("../models/Category"));
+const Publisher_1 = __importDefault(require("../models/Publisher"));
 exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
-    const { page = 1, limit = 10, category, author, language = "English", search, sortBy = "createdAt", sortOrder = "desc", isActive = true, isFeatured, } = req.query;
-    const filter = { isActive };
+    const { page = 1, limit = 10, category, author, language, search, sortBy = "createdAt", sortOrder = "desc", isActive, isFeatured, } = req.query;
+    const filter = {};
+    if (isActive !== undefined) {
+        filter.isActive = isActive === "true";
+    }
     if (category) {
         filter.categories = { $in: [category] };
     }
@@ -28,6 +33,8 @@ exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
             { authors: { $regex: search, $options: "i" } },
             { description: { $regex: search, $options: "i" } },
             { tags: { $regex: search, $options: "i" } },
+            { isbn: { $regex: search, $options: "i" } },
+            { isbn13: { $regex: search, $options: "i" } },
         ];
     }
     const sort = {};
@@ -208,7 +215,7 @@ exports.searchBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         $text: { $search: q },
         isActive: true,
     });
-    res.status(200).json({
+    return res.status(200).json({
         status: "success",
         results: books.length,
         pagination: {
@@ -218,6 +225,25 @@ exports.searchBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         },
         data: {
             books,
+        },
+    });
+});
+exports.getBookFormData = (0, errorHandler_1.catchAsync)(async (req, res) => {
+    const [categories, publishers] = await Promise.all([
+        Category_1.default.find({ isActive: true })
+            .select("name description slug")
+            .sort({ name: 1 })
+            .lean(),
+        Publisher_1.default.find({ isActive: true })
+            .select("name description website")
+            .sort({ name: 1 })
+            .lean(),
+    ]);
+    return res.status(200).json({
+        status: "success",
+        data: {
+            categories,
+            publishers,
         },
     });
 });

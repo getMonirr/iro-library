@@ -9,6 +9,7 @@ const express_validator_1 = require("express-validator");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = __importDefault(require("../config/config"));
 const errorHandler_1 = require("../middleware/errorHandler");
+const ActivityLog_1 = __importDefault(require("../models/ActivityLog"));
 const User_1 = __importDefault(require("../models/User"));
 const signToken = (id) => {
     return jsonwebtoken_1.default.sign({ id }, config_1.default.JWT_SECRET, {
@@ -24,10 +25,16 @@ const createSendToken = (user, statusCode, res) => {
         data: {
             user,
         },
+        ...(user.mustChangePassword && {
+            message: "You must change your password before accessing other features.",
+            mustChangePassword: true,
+        }),
     });
 };
 exports.signup = (0, errorHandler_1.catchAsync)(async (req, res) => {
+    console.log("Signup request body:", req.body);
     const errors = (0, express_validator_1.validationResult)(req);
+    console.log("Validation errors:", errors.array());
     if (!errors.isEmpty()) {
         return res.status(400).json({
             status: "error",
@@ -36,9 +43,21 @@ exports.signup = (0, errorHandler_1.catchAsync)(async (req, res) => {
         });
     }
     const { firstName, lastName, email, phone, password, role = "member", dateOfBirth, address, occupation, } = req.body;
+    console.log({
+        firstName,
+        lastName,
+        email,
+        phone,
+        password,
+        role,
+        dateOfBirth,
+        address,
+        occupation,
+    });
     const existingUser = await User_1.default.findOne({
         $or: [email ? { email } : {}, phone ? { phone } : {}].filter((obj) => Object.keys(obj).length > 0),
     });
+    console.log("Existing user:", existingUser);
     if (existingUser) {
         return res.status(400).json({
             status: "error",
@@ -56,6 +75,7 @@ exports.signup = (0, errorHandler_1.catchAsync)(async (req, res) => {
         address,
         occupation,
     });
+    console.log("New user created:", newUser);
     createSendToken(newUser, 201, res);
 });
 exports.login = (0, errorHandler_1.catchAsync)(async (req, res) => {
@@ -91,6 +111,20 @@ exports.login = (0, errorHandler_1.catchAsync)(async (req, res) => {
     }
     const correct = await user.comparePassword(password);
     if (!correct) {
+        await ActivityLog_1.default.create({
+            user: user._id,
+            action: "LOGIN_FAILED",
+            resource: "Auth",
+            details: {
+                identifier,
+                reason: "incorrect_password",
+                ipAddress: req.ip || req.connection?.remoteAddress,
+            },
+            ipAddress: req.ip || req.connection?.remoteAddress,
+            userAgent: req.get("User-Agent"),
+            severity: "medium",
+            category: "security",
+        });
         await user.incLoginAttempts();
         return res.status(401).json({
             status: "error",
@@ -98,11 +132,40 @@ exports.login = (0, errorHandler_1.catchAsync)(async (req, res) => {
         });
     }
     if (!user.isActive) {
+        await ActivityLog_1.default.create({
+            user: user._id,
+            action: "LOGIN_FAILED",
+            resource: "Auth",
+            details: {
+                identifier,
+                reason: "account_inactive",
+                ipAddress: req.ip || req.connection?.remoteAddress,
+            },
+            ipAddress: req.ip || req.connection?.remoteAddress,
+            userAgent: req.get("User-Agent"),
+            severity: "high",
+            category: "security",
+        });
         return res.status(401).json({
             status: "error",
             message: "Your account has been deactivated. Please contact support.",
         });
     }
+    await ActivityLog_1.default.create({
+        user: user._id,
+        action: "LOGIN_SUCCESS",
+        resource: "Auth",
+        details: {
+            identifier,
+            userRole: user.role,
+            isFirstLogin: user.isFirstLogin,
+            ipAddress: req.ip || req.connection?.remoteAddress,
+        },
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get("User-Agent"),
+        severity: "low",
+        category: "auth",
+    });
     await User_1.default.findByIdAndUpdate(user._id, {
         $unset: { loginAttempts: 1, lockUntil: 1 },
         lastLogin: new Date(),
