@@ -1297,3 +1297,37 @@
 {"level":"info","message":"GET /api/books/stats - ::1","service":"iro-library-api","timestamp":"2025-08-02 12:54:44"}
 {"level":"info","message":"GET /api/books/featured - ::ffff:127.0.0.1","service":"iro-library-api","timestamp":"2025-08-02 12:54:44"}
 {"level":"info","message":"MongoDB Connected: ac-dadad0w-shard-00-00.d7lse9s.mongodb.net","service":"iro-library-api","timestamp":"2025-08-02 12:54:48"}
+{"level":"info","message":"Server running in development mode on port 5000","service":"iro-library-api","timestamp":"2025-08-02 13:13:14"}
+{"level":"info","message":"MongoDB Connected: ac-dadad0w-shard-00-02.d7lse9s.mongodb.net","service":"iro-library-api","timestamp":"2025-08-02 13:13:17"}
+{"level":"info","message":"Server running in development mode on port 5000","service":"iro-library-api","timestamp":"2025-08-02 13:17:22"}
+{"level":"info","message":"MongoDB Connected: ac-dadad0w-shard-00-01.d7lse9s.mongodb.net","service":"iro-library-api","timestamp":"2025-08-02 13:17:25"}
+{"level":"info","message":"Server running in development mode on port 5000","service":"iro-library-api","timestamp":"2025-08-02 13:17:35"}
+{"level":"info","message":"MongoDB Connected: ac-dadad0w-shard-00-02.d7lse9s.mongodb.net","service":"iro-library-api","timestamp":"2025-08-02 13:17:39"}
+{"level":"info","message":"GET /api/books/stats - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:03"}
+{"level":"info","message":"GET /api/books/featured - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:03"}
+{"level":"info","message":"GET /api/books/popular - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:03"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:03"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:03"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:05"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:06"}
+{"level":"info","message":"GET /api/books/stats - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:35"}
+{"level":"info","message":"GET /api/books/featured - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:35"}
+{"level":"info","message":"GET /api/books/popular - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:35"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:35"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:35"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:35"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:36"}
+{"level":"info","message":"GET /api/books/688d90bab6c4a88756f9aa21 - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:20:54"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:21:00"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:21:00"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:21:08"}
+{"level":"info","message":"GET /api/books/688d948ca5dc4e4296d7402d - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:21:23"}
+{"level":"info","message":"GET /api/books/688d90bdb6c4a88756f9aa31 - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:21:29"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:26:32"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:26:36"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:26:36"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:26:49"}
+{"level":"info","message":"GET /api/books/688d90bfb6c4a88756f9aa39 - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:27:07"}
+{"level":"warn","message":"MongoDB disconnected","service":"iro-library-api","timestamp":"2025-08-02 13:29:38"}
+{"level":"info","message":"GET /api/books - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:31:37"}
+{"level":"info","message":"GET /api/books/categories - ::1","service":"iro-library-api","timestamp":"2025-08-02 13:31:37"}

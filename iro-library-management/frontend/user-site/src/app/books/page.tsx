@@ -1,26 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { 
-  Search, 
-  Filter, 
-  Grid, 
-  List, 
-  BookOpen, 
-  Star, 
-  Calendar, 
-  MapPin,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight
-} from "lucide-react";
-import { useBookCategoriesQuery, useBooksQuery } from '@/hooks/useBooks';
-import { Book } from '@/services/bookService';
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
+import { useBookCategoriesQuery, useBooksQuery } from "@/hooks/useBooks";
+import { Book } from "@/services/bookService";
+import {
+  BookOpen,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Grid,
+  List,
+  MapPin,
+  Search,
+  Star,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface FilterState {
   search: string;
@@ -115,7 +113,9 @@ export default function BooksPage() {
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading books...</p>
+              <p className="text-gray-600 dark:text-gray-400">
+                Loading books...
+              </p>
             </div>
           </div>
         </main>
@@ -155,6 +155,14 @@ export default function BooksPage() {
 
   const books = booksResponse?.data?.books || [];
   const pagination = booksResponse?.data?.pagination;
+
+  // Debug logging
+  console.log("Books Response:", booksResponse);
+  console.log("Books:", books);
+  console.log("Pagination:", pagination);
+  console.log("Books length:", books.length);
+  console.log("Current page:", currentPage);
+  console.log("Items per page:", itemsPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -386,67 +394,202 @@ export default function BooksPage() {
                 ))}
               </div>
 
-              {/* Pagination */}
-              {pagination && pagination.totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalBooks} total books)
+              {/* Simple and Always Visible Pagination */}
+              {pagination && (
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md border border-gray-200 dark:border-gray-700">
+                  {/* Debug Info - Remove this after testing */}
+                  <div className="mb-4 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs text-gray-600 dark:text-gray-400">
+                    Debug: Current Page: {pagination.currentPage}, Total Pages:{" "}
+                    {pagination.totalPages}, Has Prev:{" "}
+                    {pagination.hasPrev ? "Yes" : "No"}, Has Next:{" "}
+                    {pagination.hasNext ? "Yes" : "No"}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handlePageChange(1)}
-                      disabled={!pagination.hasPrev}
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <ChevronsLeft className="h-4 w-4" />
-                    </button>
+                  {/* Pagination Info */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Showing {(pagination.currentPage - 1) * itemsPerPage + 1}-
+                      {Math.min(
+                        pagination.currentPage * itemsPerPage,
+                        pagination.totalBooks
+                      )}{" "}
+                      of {pagination.totalBooks} books
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Page {pagination.currentPage} of {pagination.totalPages}
+                    </div>
+                  </div>
 
+                  {/* Pagination Controls */}
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Previous Button */}
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={!pagination.hasPrev}
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Previous</span>
                     </button>
 
                     {/* Page Numbers */}
-                    {[...Array(Math.min(5, pagination.totalPages))].map((_, i) => {
-                      const startPage = Math.max(1, currentPage - 2);
-                      const pageNum = startPage + i;
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const pages = [];
+                        const totalPages = pagination.totalPages;
+                        const current = currentPage;
 
-                      if (pageNum > pagination.totalPages) return null;
+                        // Always show first page
+                        if (totalPages > 0) {
+                          pages.push(
+                            <button
+                              key={1}
+                              onClick={() => handlePageChange(1)}
+                              className={`px-3 py-2 border rounded-lg transition-colors ${
+                                1 === current
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                  : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              1
+                            </button>
+                          );
+                        }
 
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`px-3 py-2 border rounded-lg transition-colors ${
-                            pageNum === currentPage
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
+                        // Add ellipsis if needed
+                        if (current > 3 && totalPages > 5) {
+                          pages.push(
+                            <span
+                              key="ellipsis1"
+                              className="px-2 text-gray-500"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
 
+                        // Add pages around current page
+                        const startPage = Math.max(2, current - 1);
+                        const endPage = Math.min(totalPages - 1, current + 1);
+
+                        for (let i = startPage; i <= endPage; i++) {
+                          if (i !== 1 && i !== totalPages) {
+                            pages.push(
+                              <button
+                                key={i}
+                                onClick={() => handlePageChange(i)}
+                                className={`px-3 py-2 border rounded-lg transition-colors ${
+                                  i === current
+                                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                }`}
+                              >
+                                {i}
+                              </button>
+                            );
+                          }
+                        }
+
+                        // Add ellipsis if needed
+                        if (current < totalPages - 2 && totalPages > 5) {
+                          pages.push(
+                            <span
+                              key="ellipsis2"
+                              className="px-2 text-gray-500"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
+
+                        // Always show last page if more than 1 page
+                        if (totalPages > 1) {
+                          pages.push(
+                            <button
+                              key={totalPages}
+                              onClick={() => handlePageChange(totalPages)}
+                              className={`px-3 py-2 border rounded-lg transition-colors ${
+                                totalPages === current
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                  : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {totalPages}
+                            </button>
+                          );
+                        }
+
+                        return pages;
+                      })()}
+                    </div>
+
+                    {/* Next Button */}
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={!pagination.hasNext}
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
+                      <span className="hidden sm:inline">Next</span>
                       <ChevronRight className="h-4 w-4" />
                     </button>
+                  </div>
 
-                    <button
-                      onClick={() => handlePageChange(pagination.totalPages)}
-                      disabled={!pagination.hasNext}
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <ChevronsRight className="h-4 w-4" />
-                    </button>
+                  {/* Quick Jump (only show if more than 5 pages) */}
+                  {pagination.totalPages > 5 && (
+                    <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Go to page:
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={pagination.totalPages}
+                        value={currentPage}
+                        onChange={(e) => {
+                          const page = parseInt(e.target.value);
+                          if (page >= 1 && page <= pagination.totalPages) {
+                            handlePageChange(page);
+                          }
+                        }}
+                        className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-white"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        of {pagination.totalPages}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Always show basic pagination if no pagination data but we have books */}
+              {!pagination && books.length > 0 && (
+                <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md border border-gray-200 dark:border-gray-700">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Showing {books.length} books
+                    </div>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">Previous</span>
+                      </button>
+
+                      <span className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                        {currentPage}
+                      </span>
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -493,7 +636,10 @@ function BookCard({ book, viewMode }: BookCardProps) {
                   </h3>
                 </Link>
                 <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">
-                  by {Array.isArray(book.authors) ? book.authors.join(", ") : book.authors}
+                  by{" "}
+                  {Array.isArray(book.authors)
+                    ? book.authors.join(", ")
+                    : book.authors}
                 </p>
 
                 <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -582,7 +728,8 @@ function BookCard({ book, viewMode }: BookCardProps) {
         </Link>
 
         <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-          by {Array.isArray(book.authors) ? book.authors.join(", ") : book.authors}
+          by{" "}
+          {Array.isArray(book.authors) ? book.authors.join(", ") : book.authors}
         </p>
 
         {book.rating && (
