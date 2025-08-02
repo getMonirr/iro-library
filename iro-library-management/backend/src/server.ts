@@ -13,6 +13,7 @@ import { logger } from "./utils/logger";
 // Import routes
 import adminRoutes from "./routes/admin.routes";
 import authRoutes from "./routes/auth.routes";
+import authorRoutes from "./routes/author.routes";
 import bookRoutes from "./routes/book.routes";
 import borrowRoutes from "./routes/borrow.routes";
 import categoryRoutes from "./routes/category.routes";
@@ -95,6 +96,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/publishers", publisherRoutes);
+app.use("/api/authors", authorRoutes);
 app.use("/api/borrows", borrowRoutes);
 app.use("/api/reactions", reactionRoutes);
 app.use("/api/comments", commentRoutes);

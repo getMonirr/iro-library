@@ -34,7 +34,13 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const bookIdGenerator_1 = require("../utils/bookIdGenerator");
 const bookSchema = new mongoose_1.Schema({
+    bookId: {
+        type: String,
+        unique: true,
+        index: true,
+    },
     title: {
         type: String,
         required: [true, "Book title is required"],
@@ -48,37 +54,14 @@ const bookSchema = new mongoose_1.Schema({
     },
     authors: [
         {
-            type: String,
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: "Author",
             required: true,
-            trim: true,
         },
     ],
-    isbn: {
-        type: String,
-        unique: true,
-        sparse: true,
-        validate: {
-            validator: function (v) {
-                return /^(?:\d{9}[\dX]|\d{13})$/.test(v.replace(/-/g, ""));
-            },
-            message: "Please enter a valid ISBN",
-        },
-    },
-    isbn13: {
-        type: String,
-        unique: true,
-        sparse: true,
-        validate: {
-            validator: function (v) {
-                return /^\d{13}$/.test(v.replace(/-/g, ""));
-            },
-            message: "Please enter a valid ISBN-13",
-        },
-    },
     publisher: {
-        type: String,
-        trim: true,
-        maxlength: [100, "Publisher name cannot exceed 100 characters"],
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "Publisher",
     },
     publishedDate: Date,
     language: {
@@ -96,27 +79,9 @@ const bookSchema = new mongoose_1.Schema({
     },
     categories: [
         {
-            type: String,
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: "Category",
             required: true,
-            enum: [
-                "Quran & Tafsir",
-                "Hadith",
-                "Fiqh",
-                "Aqeedah",
-                "History",
-                "Biography",
-                "Islamic Philosophy",
-                "Arabic Language",
-                "Islamic Art",
-                "Contemporary Issues",
-                "Children Books",
-                "General Knowledge",
-                "Science & Technology",
-                "Health & Medicine",
-                "Education",
-                "Literature",
-                "Research & Reference",
-            ],
         },
     ],
     tags: [
@@ -294,11 +259,35 @@ bookSchema.virtual("fullLocation").get(function () {
     const { floor, section, shelf } = this.location;
     return [floor, section, shelf].filter(Boolean).join(" - ");
 });
+bookSchema.pre("save", async function (next) {
+    if (this.isNew && !this.bookId) {
+        try {
+            this.bookId = await (0, bookIdGenerator_1.generateUniqueBookId)();
+        }
+        catch (error) {
+            return next(error);
+        }
+    }
+    next();
+});
+bookSchema.pre("validate", async function (next) {
+    if (this.isNew && !this.bookId) {
+        try {
+            this.bookId = await (0, bookIdGenerator_1.generateUniqueBookId)();
+        }
+        catch (error) {
+            return next(error);
+        }
+    }
+    next();
+});
+bookSchema.virtual("formattedBookId").get(function () {
+    return this.bookId;
+});
+bookSchema.index({ bookId: 1 });
 bookSchema.index({ title: "text", authors: "text", description: "text" });
 bookSchema.index({ categories: 1 });
 bookSchema.index({ tags: 1 });
-bookSchema.index({ isbn: 1 });
-bookSchema.index({ isbn13: 1 });
 bookSchema.index({ isActive: 1 });
 bookSchema.index({ isFeatured: 1 });
 bookSchema.index({ "statistics.views": -1 });

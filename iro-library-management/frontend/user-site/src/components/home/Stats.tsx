@@ -5,6 +5,10 @@ import { useLibraryStatsQuery } from "@/hooks/useBooks";
 export function Stats() {
   const { data: response, isLoading: loading, error } = useLibraryStatsQuery();
 
+  console.log("Stats Response:", response);
+  console.log("Stats Error:", error);
+  console.log("Stats Loading:", loading);
+
   // Use actual data or fallback on error
   const stats = response?.data || {
     totalBooks: 10000,

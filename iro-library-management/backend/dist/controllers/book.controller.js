@@ -3,12 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBookFormData = exports.searchBooks = exports.getBookCategories = exports.getPopularBooks = exports.getFeaturedBooks = exports.deleteBook = exports.updateBook = exports.createBook = exports.getBook = exports.getAllBooks = void 0;
+exports.getLibraryStats = exports.getBookFormData = exports.searchBooks = exports.getBookCategories = exports.getPopularBooks = exports.getFeaturedBooks = exports.deleteBook = exports.updateBook = exports.createBook = exports.getBook = exports.getAllBooks = void 0;
 const express_validator_1 = require("express-validator");
 const errorHandler_1 = require("../middleware/errorHandler");
+const Author_1 = __importDefault(require("../models/Author"));
 const Book_1 = __importDefault(require("../models/Book"));
 const Category_1 = __importDefault(require("../models/Category"));
 const Publisher_1 = __importDefault(require("../models/Publisher"));
+const User_1 = __importDefault(require("../models/User"));
+const Borrow_1 = __importDefault(require("../models/Borrow"));
 exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
     const { page = 1, limit = 10, category, author, language, search, sortBy = "createdAt", sortOrder = "desc", isActive, isFeatured, } = req.query;
     const filter = {};
@@ -16,10 +19,36 @@ exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         filter.isActive = isActive === "true";
     }
     if (category) {
-        filter.categories = { $in: [category] };
+        let categoryIds = [];
+        if (category &&
+            typeof category === "string" &&
+            category.match(/^[0-9a-fA-F]{24}$/)) {
+            categoryIds = [category];
+        }
+        else {
+            const matchingCategories = await Category_1.default.find({
+                name: { $regex: category, $options: "i" },
+            }).select("_id");
+            categoryIds = matchingCategories.map((c) => c._id);
+        }
+        if (categoryIds.length > 0) {
+            filter.categories = { $in: categoryIds };
+        }
+        else {
+            filter.categories = { $in: [] };
+        }
     }
     if (author) {
-        filter.authors = { $regex: author, $options: "i" };
+        const matchingAuthors = await Author_1.default.find({
+            name: { $regex: author, $options: "i" },
+        }).select("_id");
+        const authorIds = matchingAuthors.map((a) => a._id);
+        if (authorIds.length > 0) {
+            filter.authors = { $in: authorIds };
+        }
+        else {
+            filter.authors = { $in: [] };
+        }
     }
     if (language) {
         filter.language = language;
@@ -28,13 +57,31 @@ exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         filter.isFeatured = isFeatured === "true";
     }
     if (search) {
+        const matchingAuthors = await Author_1.default.find({
+            name: { $regex: search, $options: "i" },
+        }).select("_id");
+        const authorIds = matchingAuthors.map((author) => author._id);
+        const matchingCategories = await Category_1.default.find({
+            name: { $regex: search, $options: "i" },
+        }).select("_id");
+        const categoryIds = matchingCategories.map((category) => category._id);
+        const matchingPublishers = await Publisher_1.default.find({
+            name: { $regex: search, $options: "i" },
+        }).select("_id");
+        const publisherIds = matchingPublishers.map((publisher) => publisher._id);
         filter.$or = [
             { title: { $regex: search, $options: "i" } },
-            { authors: { $regex: search, $options: "i" } },
             { description: { $regex: search, $options: "i" } },
             { tags: { $regex: search, $options: "i" } },
-            { isbn: { $regex: search, $options: "i" } },
-            { isbn13: { $regex: search, $options: "i" } },
+            { language: { $regex: search, $options: "i" } },
+            { bookId: { $regex: search, $options: "i" } },
+            ...(authorIds.length > 0 ? [{ authors: { $in: authorIds } }] : []),
+            ...(categoryIds.length > 0
+                ? [{ categories: { $in: categoryIds } }]
+                : []),
+            ...(publisherIds.length > 0
+                ? [{ publisher: { $in: publisherIds } }]
+                : []),
         ];
     }
     const sort = {};
@@ -47,6 +94,9 @@ exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         .sort(sort)
         .skip(skip)
         .limit(limitNum)
+        .populate("authors", "name")
+        .populate("publisher", "name")
+        .populate("categories", "name")
         .populate("metadata.addedBy", "firstName lastName")
         .lean();
     const total = await Book_1.default.countDocuments(filter);
@@ -68,6 +118,9 @@ exports.getAllBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
 exports.getBook = (0, errorHandler_1.catchAsync)(async (req, res) => {
     const { id } = req.params;
     const book = await Book_1.default.findByIdAndUpdate(id, { $inc: { "statistics.views": 1 } }, { new: true })
+        .populate("authors", "name")
+        .populate("publisher", "name")
+        .populate("categories", "name")
         .populate("metadata.addedBy", "firstName lastName")
         .populate("metadata.lastModifiedBy", "firstName lastName");
     if (!book) {
@@ -156,14 +209,23 @@ exports.getFeaturedBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         isFeatured: true,
     })
         .select("-metadata")
+        .populate("authors", "name")
+        .populate("publisher", "name")
+        .populate("categories", "name")
         .limit(parseInt(limit))
         .sort({ createdAt: -1 })
         .lean();
     res.status(200).json({
-        status: "success",
-        results: books.length,
+        success: true,
         data: {
             books,
+            pagination: {
+                currentPage: 1,
+                totalPages: 1,
+                totalBooks: books.length,
+                hasNext: false,
+                hasPrev: false,
+            },
         },
     });
 });
@@ -171,24 +233,34 @@ exports.getPopularBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
     const { limit = 10 } = req.query;
     const books = await Book_1.default.find({ isActive: true })
         .select("-metadata")
+        .populate("authors", "name")
+        .populate("publisher", "name")
+        .populate("categories", "name")
         .sort({ "statistics.views": -1, "statistics.borrows": -1 })
         .limit(parseInt(limit))
         .lean();
     res.status(200).json({
-        status: "success",
-        results: books.length,
+        success: true,
         data: {
             books,
+            pagination: {
+                currentPage: 1,
+                totalPages: 1,
+                totalBooks: books.length,
+                hasNext: false,
+                hasPrev: false,
+            },
         },
     });
 });
 exports.getBookCategories = (0, errorHandler_1.catchAsync)(async (req, res) => {
-    const categories = await Book_1.default.distinct("categories", { isActive: true });
+    const categories = await Category_1.default.find({ isActive: true })
+        .select("name")
+        .lean();
+    const categoryNames = categories.map(cat => cat.name);
     res.status(200).json({
-        status: "success",
-        data: {
-            categories,
-        },
+        success: true,
+        data: categoryNames,
     });
 });
 exports.searchBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
@@ -207,6 +279,9 @@ exports.searchBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
         isActive: true,
     }, { score: { $meta: "textScore" } })
         .select("-metadata")
+        .populate("authors", "name")
+        .populate("publisher", "name")
+        .populate("categories", "name")
         .sort({ score: { $meta: "textScore" } })
         .skip(skip)
         .limit(limitNum)
@@ -229,7 +304,7 @@ exports.searchBooks = (0, errorHandler_1.catchAsync)(async (req, res) => {
     });
 });
 exports.getBookFormData = (0, errorHandler_1.catchAsync)(async (req, res) => {
-    const [categories, publishers] = await Promise.all([
+    const [categories, publishers, authors] = await Promise.all([
         Category_1.default.find({ isActive: true })
             .select("name description slug")
             .sort({ name: 1 })
@@ -238,12 +313,34 @@ exports.getBookFormData = (0, errorHandler_1.catchAsync)(async (req, res) => {
             .select("name description website")
             .sort({ name: 1 })
             .lean(),
+        Author_1.default.find({ isActive: true })
+            .select("name description nationality")
+            .sort({ name: 1 })
+            .lean(),
     ]);
     return res.status(200).json({
         status: "success",
         data: {
             categories,
             publishers,
+            authors,
+        },
+    });
+});
+exports.getLibraryStats = (0, errorHandler_1.catchAsync)(async (req, res) => {
+    const [totalBooks, totalBorrows, totalMembers, totalCategories] = await Promise.all([
+        Book_1.default.countDocuments({ isActive: true }),
+        Borrow_1.default.countDocuments(),
+        User_1.default.countDocuments({ role: { $ne: 'admin' } }),
+        Category_1.default.countDocuments({ isActive: true }),
+    ]);
+    res.status(200).json({
+        success: true,
+        data: {
+            totalBooks,
+            totalBorrows,
+            totalMembers,
+            totalCategories,
         },
     });
 });

@@ -9,6 +9,7 @@ import {
   BarChart3,
   BookMarked,
   BookOpen,
+  Building2,
   Calendar,
   Home,
   MessageSquare,
@@ -16,6 +17,7 @@ import {
   Shield,
   Tags,
   User,
+  UserCheck,
   Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -40,6 +42,18 @@ export default function DashboardLayout({
       href: "/dashboard/books",
       icon: BookOpen,
       description: "Manage book inventory",
+    },
+    {
+      label: "Authors",
+      href: "/dashboard/authors",
+      icon: UserCheck,
+      description: "Manage book authors",
+    },
+    {
+      label: "Publishers",
+      href: "/dashboard/publishers",
+      icon: Building2,
+      description: "Manage book publishers",
     },
     {
       label: "Categories",

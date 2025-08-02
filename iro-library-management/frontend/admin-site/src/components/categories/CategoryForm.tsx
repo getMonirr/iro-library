@@ -142,7 +142,7 @@ export function CategoryForm({
               htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Category Name *
+              Category Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -167,7 +167,8 @@ export function CategoryForm({
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Description
+              Description{" "}
+              <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <textarea
               id="description"

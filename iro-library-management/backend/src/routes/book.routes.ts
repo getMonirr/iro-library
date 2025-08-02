@@ -8,6 +8,7 @@ import {
   getBookCategories,
   getBookFormData,
   getFeaturedBooks,
+  getLibraryStats,
   getPopularBooks,
   searchBooks,
   updateBook,
@@ -81,6 +82,7 @@ router.get("/search", searchBooks);
 router.get("/featured", getFeaturedBooks);
 router.get("/popular", getPopularBooks);
 router.get("/categories", getBookCategories);
+router.get("/stats", getLibraryStats);
 router.get("/form-data", getBookFormData);
 
 // Public routes with optional authentication

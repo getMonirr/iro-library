@@ -1,18 +1,33 @@
 import api from "@/lib/api";
 
+// Base interfaces for populated references
+interface Author {
+  _id: string;
+  name: string;
+}
+
+interface Publisher {
+  _id: string;
+  name: string;
+}
+
+interface Category {
+  _id: string;
+  name: string;
+}
+
 export interface Book {
   _id: string;
+  bookId: string;
   title: string;
   subtitle?: string;
-  authors: string[];
-  isbn?: string;
-  isbn13?: string;
-  publisher?: string;
+  authors: (string | Author)[];
+  publisher?: string | Publisher;
   publishedDate?: string;
   language?: string;
   pages?: number;
   description?: string;
-  categories: string[];
+  categories: (string | Category)[];
   tags: string[];
   coverImage?: string;
   thumbnailImage?: string;
@@ -56,8 +71,6 @@ export interface CreateBookData {
   title: string;
   subtitle?: string;
   authors: string[];
-  isbn?: string;
-  isbn13?: string;
   publisher?: string;
   publishedDate?: string;
   language?: string;

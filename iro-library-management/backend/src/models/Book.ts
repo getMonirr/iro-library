@@ -1,18 +1,18 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { generateUniqueBookId } from "../utils/bookIdGenerator";
 
 export interface IBook extends Document {
   _id: string;
+  bookId: string;
   title: string;
   subtitle?: string;
-  authors: string[];
-  isbn?: string;
-  isbn13?: string;
-  publisher?: string;
+  authors: mongoose.Types.ObjectId[];
+  publisher?: mongoose.Types.ObjectId;
   publishedDate?: Date;
   language: string;
   pages?: number;
   description?: string;
-  categories: string[];
+  categories: mongoose.Types.ObjectId[];
   tags: string[];
   coverImage?: string;
   thumbnailImage?: string;
@@ -65,6 +65,11 @@ export interface IBook extends Document {
 
 const bookSchema = new Schema<IBook>(
   {
+    bookId: {
+      type: String,
+      unique: true,
+      index: true,
+    },
     title: {
       type: String,
       required: [true, "Book title is required"],
@@ -78,37 +83,14 @@ const bookSchema = new Schema<IBook>(
     },
     authors: [
       {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Author",
         required: true,
-        trim: true,
       },
     ],
-    isbn: {
-      type: String,
-      unique: true,
-      sparse: true,
-      validate: {
-        validator: function (v: string) {
-          return /^(?:\d{9}[\dX]|\d{13})$/.test(v.replace(/-/g, ""));
-        },
-        message: "Please enter a valid ISBN",
-      },
-    },
-    isbn13: {
-      type: String,
-      unique: true,
-      sparse: true,
-      validate: {
-        validator: function (v: string) {
-          return /^\d{13}$/.test(v.replace(/-/g, ""));
-        },
-        message: "Please enter a valid ISBN-13",
-      },
-    },
     publisher: {
-      type: String,
-      trim: true,
-      maxlength: [100, "Publisher name cannot exceed 100 characters"],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Publisher",
     },
     publishedDate: Date,
     language: {
@@ -126,27 +108,9 @@ const bookSchema = new Schema<IBook>(
     },
     categories: [
       {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
         required: true,
-        enum: [
-          "Quran & Tafsir",
-          "Hadith",
-          "Fiqh",
-          "Aqeedah",
-          "History",
-          "Biography",
-          "Islamic Philosophy",
-          "Arabic Language",
-          "Islamic Art",
-          "Contemporary Issues",
-          "Children Books",
-          "General Knowledge",
-          "Science & Technology",
-          "Health & Medicine",
-          "Education",
-          "Literature",
-          "Research & Reference",
-        ],
       },
     ],
     tags: [
@@ -334,12 +298,41 @@ bookSchema.virtual("fullLocation").get(function () {
   return [floor, section, shelf].filter(Boolean).join(" - ");
 });
 
-// Indexes for better query performance
+// Import the book ID generator
+// Generate unique book ID before saving
+bookSchema.pre<IBook>("save", async function (next) {
+  if (this.isNew && !this.bookId) {
+    try {
+      this.bookId = await generateUniqueBookId();
+    } catch (error) {
+      return next(error as Error);
+    }
+  }
+  next();
+});
+
+// Validate that bookId exists before saving
+bookSchema.pre<IBook>("validate", async function (next) {
+  if (this.isNew && !this.bookId) {
+    try {
+      this.bookId = await generateUniqueBookId();
+    } catch (error) {
+      return next(error as Error);
+    }
+  }
+  next();
+});
+
+// Virtual for formatted book ID display
+bookSchema.virtual("formattedBookId").get(function () {
+  return this.bookId;
+});
+
+// Indexes for better performance
+bookSchema.index({ bookId: 1 });
 bookSchema.index({ title: "text", authors: "text", description: "text" });
 bookSchema.index({ categories: 1 });
 bookSchema.index({ tags: 1 });
-bookSchema.index({ isbn: 1 });
-bookSchema.index({ isbn13: 1 });
 bookSchema.index({ isActive: 1 });
 bookSchema.index({ isFeatured: 1 });
 bookSchema.index({ "statistics.views": -1 });

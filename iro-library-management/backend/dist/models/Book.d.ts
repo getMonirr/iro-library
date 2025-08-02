@@ -1,17 +1,16 @@
 import mongoose, { Document } from "mongoose";
 export interface IBook extends Document {
     _id: string;
+    bookId: string;
     title: string;
     subtitle?: string;
-    authors: string[];
-    isbn?: string;
-    isbn13?: string;
-    publisher?: string;
+    authors: mongoose.Types.ObjectId[];
+    publisher?: mongoose.Types.ObjectId;
     publishedDate?: Date;
     language: string;
     pages?: number;
     description?: string;
-    categories: string[];
+    categories: mongoose.Types.ObjectId[];
     tags: string[];
     coverImage?: string;
     thumbnailImage?: string;

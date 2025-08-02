@@ -13,6 +13,12 @@ export interface BookFormData {
     description: string;
     website?: string;
   }>;
+  authors: Array<{
+    _id: string;
+    name: string;
+    description?: string;
+    nationality?: string;
+  }>;
 }
 
 export interface BookFormDataResponse {

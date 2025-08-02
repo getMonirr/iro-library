@@ -23,7 +23,6 @@ export function BookForm({
     title: "",
     subtitle: "",
     authors: [],
-    isbn: "",
     description: "",
     categories: [],
     tags: [],
@@ -62,10 +61,19 @@ export function BookForm({
       setFormData({
         title: book.title,
         subtitle: book.subtitle || "",
-        authors: book.authors,
-        isbn: book.isbn || "",
+        // Handle both populated objects and ID strings for authors
+        authors: Array.isArray(book.authors)
+          ? book.authors.map((author: any) =>
+              typeof author === "object" ? author.name : author
+            )
+          : [],
         description: book.description || "",
-        categories: book.categories,
+        // Handle both populated objects and ID strings for categories
+        categories: Array.isArray(book.categories)
+          ? book.categories.map((category: any) =>
+              typeof category === "object" ? category.name : category
+            )
+          : [],
         tags: book.tags || [],
         coverImage: book.coverImage || "",
         format: book.format,
@@ -81,7 +89,6 @@ export function BookForm({
         title: "",
         subtitle: "",
         authors: [],
-        isbn: "",
         description: "",
         categories: [],
         tags: [],
@@ -101,15 +108,19 @@ export function BookForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Remove bookId from formData to avoid backend validation issues
+    const { bookId, ...cleanFormData } = formData as any;
+
     if (book) {
       // For update, include availableCopies
       const updateData: UpdateBookData = {
-        ...formData,
+        ...cleanFormData,
         availableCopies: book.availableCopies,
       };
       onSubmit(updateData);
     } else {
-      onSubmit(formData);
+      onSubmit(cleanFormData);
     }
   };
 
@@ -151,11 +162,19 @@ export function BookForm({
   };
 
   const addTag = () => {
-    if (tagInput.trim() && !(formData.tags || []).includes(tagInput.trim())) {
-      setFormData({
-        ...formData,
-        tags: [...(formData.tags || []), tagInput.trim()],
-      });
+    if (tagInput.trim()) {
+      // Split by comma and add multiple tags
+      const newTags = tagInput
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag && !(formData.tags || []).includes(tag));
+
+      if (newTags.length > 0) {
+        setFormData({
+          ...formData,
+          tags: [...(formData.tags || []), ...newTags],
+        });
+      }
       setTagInput("");
     }
   };
@@ -261,21 +280,21 @@ export function BookForm({
             </div>
           </div>
 
-          {/* ISBN and Total Copies */}
+          {/* Book ID Display (if editing) and Total Copies */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ISBN
-              </label>
-              <input
-                type="text"
-                value={formData.isbn}
-                onChange={(e) =>
-                  setFormData({ ...formData, isbn: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
+            {book && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Book ID
+                </label>
+                <input
+                  type="text"
+                  value={book.bookId || ""}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Total Copies *
@@ -451,7 +470,7 @@ export function BookForm({
                   e.key === "Enter" && (e.preventDefault(), addTag())
                 }
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Enter tag"
+                placeholder="Enter tags (comma-separated)"
               />
               <button
                 type="button"

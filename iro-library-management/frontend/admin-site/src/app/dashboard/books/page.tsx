@@ -138,7 +138,7 @@ export default function BooksPage() {
     const headers = [
       "Title",
       "Authors",
-      "ISBN",
+      "Book ID",
       "Categories",
       "Format",
       "Language",
@@ -150,9 +150,17 @@ export default function BooksPage() {
 
     const csvData = books.map((book) => [
       book.title,
-      book.authors.join("; "),
-      book.isbn || "",
-      book.categories.join("; "),
+      book.authors
+        .map((author: any) =>
+          typeof author === "object" ? author.name : author
+        )
+        .join("; "),
+      book.bookId || "",
+      book.categories
+        .map((category: any) =>
+          typeof category === "object" ? category.name : category
+        )
+        .join("; "),
       book.format,
       book.language || "",
       book.totalCopies,
@@ -353,7 +361,7 @@ export default function BooksPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search books by title, author, or ISBN..."
+              placeholder="Search books by title, author, or Book ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"

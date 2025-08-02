@@ -227,7 +227,7 @@ export function PublisherForm({
                 htmlFor="name"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Publisher Name *
+                Publisher Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -252,7 +252,8 @@ export function PublisherForm({
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Description
+                Description{" "}
+                <span className="text-gray-400 text-xs">(optional)</span>
               </label>
               <textarea
                 id="description"
@@ -278,7 +279,8 @@ export function PublisherForm({
                 htmlFor="website"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Website
+                Website{" "}
+                <span className="text-gray-400 text-xs">(optional)</span>
               </label>
               <input
                 type="url"
@@ -318,7 +320,10 @@ export function PublisherForm({
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-md font-medium text-gray-900">
-              Contact Information
+              Contact Information{" "}
+              <span className="text-gray-400 text-xs font-normal">
+                (all optional)
+              </span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -374,7 +379,12 @@ export function PublisherForm({
 
           {/* Address */}
           <div className="space-y-4">
-            <h3 className="text-md font-medium text-gray-900">Address</h3>
+            <h3 className="text-md font-medium text-gray-900">
+              Address{" "}
+              <span className="text-gray-400 text-xs font-normal">
+                (all optional)
+              </span>
+            </h3>
 
             {/* Street */}
             <div>

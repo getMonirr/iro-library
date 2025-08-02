@@ -49,7 +49,6 @@ const categorySchema = new mongoose_1.Schema({
     },
     slug: {
         type: String,
-        required: true,
         unique: true,
         lowercase: true,
         trim: true,
@@ -93,7 +92,7 @@ categorySchema.virtual("booksCount", {
     count: true,
 });
 categorySchema.pre("save", function (next) {
-    if (this.isModified("name")) {
+    if (this.isModified("name") || this.isNew) {
         this.slug = this.name
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, "")

@@ -2,9 +2,12 @@ import { Response } from "express";
 import { validationResult } from "express-validator";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { catchAsync } from "../middleware/errorHandler";
+import Author from "../models/Author";
 import Book from "../models/Book";
+import Borrow from "../models/Borrow";
 import Category from "../models/Category";
 import Publisher from "../models/Publisher";
+import User from "../models/User";
 
 export const getAllBooks = catchAsync(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -30,11 +33,45 @@ export const getAllBooks = catchAsync(
     }
 
     if (category) {
-      filter.categories = { $in: [category] };
+      // If category is an ObjectId, use it directly; otherwise find by name
+      let categoryIds: any[] = [];
+
+      // Check if it's a valid ObjectId
+      if (
+        category &&
+        typeof category === "string" &&
+        category.match(/^[0-9a-fA-F]{24}$/)
+      ) {
+        categoryIds = [category];
+      } else {
+        // Find categories by name
+        const matchingCategories = await Category.find({
+          name: { $regex: category, $options: "i" },
+        }).select("_id");
+        categoryIds = matchingCategories.map((c) => c._id);
+      }
+
+      if (categoryIds.length > 0) {
+        filter.categories = { $in: categoryIds };
+      } else {
+        // If no categories match, ensure no books are returned
+        filter.categories = { $in: [] };
+      }
     }
 
     if (author) {
-      filter.authors = { $regex: author, $options: "i" };
+      // Find authors by name and get their IDs
+      const matchingAuthors = await Author.find({
+        name: { $regex: author, $options: "i" },
+      }).select("_id");
+
+      const authorIds = matchingAuthors.map((a) => a._id);
+      if (authorIds.length > 0) {
+        filter.authors = { $in: authorIds };
+      } else {
+        // If no authors match, ensure no books are returned
+        filter.authors = { $in: [] };
+      }
     }
 
     if (language) {
@@ -46,13 +83,40 @@ export const getAllBooks = catchAsync(
     }
 
     if (search) {
+      // For searching authors by name, we need to find author IDs first
+      const matchingAuthors = await Author.find({
+        name: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const authorIds = matchingAuthors.map((author) => author._id);
+
+      // For searching categories by name, we need to find category IDs first
+      const matchingCategories = await Category.find({
+        name: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const categoryIds = matchingCategories.map((category) => category._id);
+
+      // For searching publishers by name, we need to find publisher IDs first
+      const matchingPublishers = await Publisher.find({
+        name: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const publisherIds = matchingPublishers.map((publisher) => publisher._id);
+
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
-        { authors: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
         { tags: { $regex: search, $options: "i" } },
-        { isbn: { $regex: search, $options: "i" } },
-        { isbn13: { $regex: search, $options: "i" } },
+        { language: { $regex: search, $options: "i" } },
+        { bookId: { $regex: search, $options: "i" } },
+        ...(authorIds.length > 0 ? [{ authors: { $in: authorIds } }] : []),
+        ...(categoryIds.length > 0
+          ? [{ categories: { $in: categoryIds } }]
+          : []),
+        ...(publisherIds.length > 0
+          ? [{ publisher: { $in: publisherIds } }]
+          : []),
       ];
     }
 
@@ -71,6 +135,9 @@ export const getAllBooks = catchAsync(
       .sort(sort)
       .skip(skip)
       .limit(limitNum)
+      .populate("authors", "name")
+      .populate("publisher", "name")
+      .populate("categories", "name")
       .populate("metadata.addedBy", "firstName lastName")
       .lean();
 
@@ -103,6 +170,9 @@ export const getBook = catchAsync(
       { $inc: { "statistics.views": 1 } },
       { new: true }
     )
+      .populate("authors", "name")
+      .populate("publisher", "name")
+      .populate("categories", "name")
       .populate("metadata.addedBy", "firstName lastName")
       .populate("metadata.lastModifiedBy", "firstName lastName");
 
@@ -220,15 +290,24 @@ export const getFeaturedBooks = catchAsync(
       isFeatured: true,
     })
       .select("-metadata")
+      .populate("authors", "name")
+      .populate("publisher", "name")
+      .populate("categories", "name")
       .limit(parseInt(limit as string))
       .sort({ createdAt: -1 })
       .lean();
 
     res.status(200).json({
-      status: "success",
-      results: books.length,
+      success: true,
       data: {
         books,
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalBooks: books.length,
+          hasNext: false,
+          hasPrev: false,
+        },
       },
     });
   }
@@ -240,15 +319,24 @@ export const getPopularBooks = catchAsync(
 
     const books = await Book.find({ isActive: true })
       .select("-metadata")
+      .populate("authors", "name")
+      .populate("publisher", "name")
+      .populate("categories", "name")
       .sort({ "statistics.views": -1, "statistics.borrows": -1 })
       .limit(parseInt(limit as string))
       .lean();
 
     res.status(200).json({
-      status: "success",
-      results: books.length,
+      success: true,
       data: {
         books,
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalBooks: books.length,
+          hasNext: false,
+          hasPrev: false,
+        },
       },
     });
   }
@@ -256,13 +344,15 @@ export const getPopularBooks = catchAsync(
 
 export const getBookCategories = catchAsync(
   async (req: AuthenticatedRequest, res: Response) => {
-    const categories = await Book.distinct("categories", { isActive: true });
+    const categories = await Category.find({ isActive: true })
+      .select("name")
+      .lean();
+
+    const categoryNames = categories.map((cat) => cat.name);
 
     res.status(200).json({
-      status: "success",
-      data: {
-        categories,
-      },
+      success: true,
+      data: categoryNames,
     });
   }
 );
@@ -291,6 +381,9 @@ export const searchBooks = catchAsync(
       { score: { $meta: "textScore" } }
     )
       .select("-metadata")
+      .populate("authors", "name")
+      .populate("publisher", "name")
+      .populate("categories", "name")
       .sort({ score: { $meta: "textScore" } })
       .skip(skip)
       .limit(limitNum)
@@ -318,14 +411,18 @@ export const searchBooks = catchAsync(
 
 export const getBookFormData = catchAsync(
   async (req: AuthenticatedRequest, res: Response) => {
-    // Get active categories and publishers for form dropdowns
-    const [categories, publishers] = await Promise.all([
+    // Get active categories, publishers, and authors for form dropdowns
+    const [categories, publishers, authors] = await Promise.all([
       Category.find({ isActive: true })
         .select("name description slug")
         .sort({ name: 1 })
         .lean(),
       Publisher.find({ isActive: true })
         .select("name description website")
+        .sort({ name: 1 })
+        .lean(),
+      Author.find({ isActive: true })
+        .select("name description nationality")
         .sort({ name: 1 })
         .lean(),
     ]);
@@ -335,6 +432,29 @@ export const getBookFormData = catchAsync(
       data: {
         categories,
         publishers,
+        authors,
+      },
+    });
+  }
+);
+
+export const getLibraryStats = catchAsync(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const [totalBooks, totalBorrows, totalMembers, totalCategories] =
+      await Promise.all([
+        Book.countDocuments({ isActive: true }),
+        Borrow.countDocuments(),
+        User.countDocuments({ role: { $ne: "admin" } }),
+        Category.countDocuments({ isActive: true }),
+      ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalBooks,
+        totalBorrows,
+        totalMembers,
+        totalCategories,
       },
     });
   }

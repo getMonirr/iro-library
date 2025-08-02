@@ -1,6 +1,7 @@
 "use client";
 
 import { usePopularBooksQuery } from "@/hooks/useBooks";
+import Link from "next/link";
 
 export function PopularBooks() {
   const { data: response, isLoading: loading, error } = usePopularBooksQuery();
@@ -71,8 +72,9 @@ export function PopularBooks() {
 
         <div className="space-y-4">
           {popularBooks.map((book, index) => (
-            <div
+            <Link
               key={book._id}
+              href={`/books/${book._id}`}
               className="bg-white dark:bg-gray-900 rounded-lg p-6 flex items-center gap-4 hover:shadow-md transition duration-200"
             >
               <div className="flex-shrink-0">
@@ -86,7 +88,14 @@ export function PopularBooks() {
                   {book.title}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-2">
-                  by {book.authors.join(", ")}
+                  by{" "}
+                  {Array.isArray(book.authors)
+                    ? book.authors
+                        .map((author: any) =>
+                          typeof author === "object" ? author.name : author
+                        )
+                        .join(", ")
+                    : book.authors}
                 </p>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
@@ -105,21 +114,27 @@ export function PopularBooks() {
               </div>
 
               <div className="flex-shrink-0">
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  disabled={book.availableCopies === 0}
+                <div
+                  className={`px-4 py-2 rounded-md text-sm transition duration-200 ${
+                    book.availableCopies === 0
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
                 >
-                  {book.availableCopies === 0 ? "Out of Stock" : "Borrow"}
-                </button>
+                  {book.availableCopies === 0 ? "Out of Stock" : "Available"}
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
         <div className="text-center mt-8">
-          <button className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200">
+          <Link
+            href="/books?sort=popular"
+            className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200 inline-block"
+          >
             View All Popular Books
-          </button>
+          </Link>
         </div>
       </div>
     </section>

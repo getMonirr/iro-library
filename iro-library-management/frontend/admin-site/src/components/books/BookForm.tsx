@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchableSelect } from "@/components/ui";
+import { SearchableMultiSelect, SearchableSelect } from "@/components/ui";
 import { useBookFormDataQuery } from "@/hooks/useBookForm";
 import { Book, CreateBookData, UpdateBookData } from "@/services/bookService";
 import { X } from "lucide-react";
@@ -25,8 +25,6 @@ export function BookForm({
     title: "",
     subtitle: "",
     authors: [],
-    isbn: "",
-    isbn13: "",
     publisher: "",
     publishedDate: "",
     language: "English",
@@ -62,28 +60,42 @@ export function BookForm({
   const [authorInput, setAuthorInput] = useState("");
   const [tagInput, setTagInput] = useState("");
 
-  // Get form data (categories and publishers)
+  // Get form data (categories, publishers, and authors)
   const { data: bookFormData, isLoading: isLoadingFormData } =
     useBookFormDataQuery();
 
-  // Extract categories and publishers from API
+  // Extract categories, publishers, and authors from API
   const categories = bookFormData?.data?.categories || [];
   const publishers = bookFormData?.data?.publishers || [];
+  const authors = bookFormData?.data?.authors || [];
 
   useEffect(() => {
     if (book) {
       setFormData({
         title: book.title,
         subtitle: book.subtitle || "",
-        authors: book.authors,
-        isbn: book.isbn || "",
-        isbn13: book.isbn13 || "",
-        publisher: book.publisher || "",
+        // Handle both populated objects and ID strings for authors
+        authors: Array.isArray(book.authors)
+          ? book.authors.map((author: any) =>
+              typeof author === "object" ? author._id : author
+            )
+          : [],
+        // Handle both populated object and ID string for publisher
+        publisher: book.publisher
+          ? typeof book.publisher === "object"
+            ? book.publisher._id
+            : book.publisher
+          : "",
         publishedDate: book.publishedDate || "",
         language: book.language || "English",
         pages: book.pages || 0,
         description: book.description || "",
-        categories: book.categories,
+        // Handle both populated objects and ID strings for categories
+        categories: Array.isArray(book.categories)
+          ? book.categories.map((category: any) =>
+              typeof category === "object" ? category._id : category
+            )
+          : [],
         tags: book.tags || [],
         coverImage: book.coverImage || "",
         thumbnailImage: book.thumbnailImage || "",
@@ -111,8 +123,6 @@ export function BookForm({
         title: "",
         subtitle: "",
         authors: [],
-        isbn: "",
-        isbn13: "",
         publisher: "",
         publishedDate: "",
         language: "English",
@@ -153,8 +163,6 @@ export function BookForm({
     // Clean up the form data by removing empty strings for optional fields
     const cleanedData = {
       ...formData,
-      isbn: formData.isbn?.trim() || undefined,
-      isbn13: formData.isbn13?.trim() || undefined,
       subtitle: formData.subtitle?.trim() || undefined,
       publisher: formData.publisher?.trim() || undefined,
       description: formData.description?.trim() || undefined,
@@ -254,7 +262,7 @@ export function BookForm({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Title *
+              Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -270,7 +278,7 @@ export function BookForm({
           {/* Authors */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Authors *
+              Authors <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-2 mb-2">
               <input
@@ -310,37 +318,31 @@ export function BookForm({
             </div>
           </div>
 
-          {/* ISBN Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Book ID (for existing books) */}
+          {book && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ISBN
+                Book ID
               </label>
               <input
                 type="text"
-                value={formData.isbn}
-                onChange={(e) =>
-                  setFormData({ ...formData, isbn: e.target.value })
-                }
-                placeholder="10-digit ISBN"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                value={book.bookId || ""}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ISBN-13
-              </label>
-              <input
-                type="text"
-                value={formData.isbn13}
-                onChange={(e) =>
-                  setFormData({ ...formData, isbn13: e.target.value })
-                }
-                placeholder="13-digit ISBN"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
+          )}
+
+          {/* Authors Selection */}
+          <SearchableMultiSelect
+            label="Authors"
+            options={authors}
+            value={formData.authors}
+            onChange={(value) => setFormData({ ...formData, authors: value })}
+            placeholder="Select authors..."
+            required
+            loading={isLoadingFormData}
+          />
 
           {/* Category Row */}
           <SearchableSelect
@@ -376,7 +378,8 @@ export function BookForm({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
+              Description{" "}
+              <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <textarea
               value={formData.description}

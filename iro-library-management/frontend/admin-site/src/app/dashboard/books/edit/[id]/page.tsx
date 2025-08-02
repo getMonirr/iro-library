@@ -1,10 +1,10 @@
 "use client";
 
-import { SearchableSelect } from "@/components/ui";
+import { SearchableMultiSelect, SearchableSelect } from "@/components/ui";
 import { useBookFormDataQuery } from "@/hooks/useBookForm";
 import { useBookQuery, useUpdateBookMutation } from "@/hooks/useBooks";
 import { UpdateBookData } from "@/services/bookService";
-import { ArrowLeft, Book, Save, X } from "lucide-react";
+import { ArrowLeft, Book, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -33,6 +33,10 @@ export default function EditBookPage({ params }: EditBookPageProps) {
   const { data: formOptions, isLoading: isLoadingOptions } =
     useBookFormDataQuery();
 
+  const authors = formOptions?.data?.authors || [];
+  const categories = formOptions?.data?.categories || [];
+  const publishers = formOptions?.data?.publishers || [];
+
   const [formData, setFormData] = useState<UpdateBookData>({});
 
   useEffect(() => {
@@ -41,15 +45,30 @@ export default function EditBookPage({ params }: EditBookPageProps) {
       setFormData({
         title: book.title,
         subtitle: book.subtitle || "",
-        authors: book.authors,
-        isbn: book.isbn || "",
-        isbn13: book.isbn13 || "",
-        publisher: book.publisher || "",
-        publishedDate: book.publishedDate || "",
+        // Handle both populated objects and ID strings for authors
+        authors: Array.isArray(book.authors)
+          ? book.authors.map((author: any) =>
+              typeof author === "object" ? author._id : author
+            )
+          : [],
+        // Handle both populated object and ID string for publisher
+        publisher: book.publisher
+          ? typeof book.publisher === "object"
+            ? book.publisher._id
+            : book.publisher
+          : "",
+        publishedDate: book.publishedDate
+          ? new Date(book.publishedDate).toISOString().split("T")[0]
+          : "",
         language: book.language || "English",
         pages: book.pages || 0,
         description: book.description || "",
-        categories: book.categories,
+        // Handle both populated objects and ID strings for categories
+        categories: Array.isArray(book.categories)
+          ? book.categories.map((category: any) =>
+              typeof category === "object" ? category._id : category
+            )
+          : [],
         tags: book.tags,
         coverImage: book.coverImage || "",
         thumbnailImage: book.thumbnailImage || "",
@@ -60,7 +79,22 @@ export default function EditBookPage({ params }: EditBookPageProps) {
         totalCopies: book.totalCopies,
         availableCopies: book.availableCopies,
         location: book.location,
-        acquisitionInfo: book.acquisitionInfo,
+        acquisitionInfo: book.acquisitionInfo
+          ? {
+              ...book.acquisitionInfo,
+              acquisitionDate: book.acquisitionInfo.acquisitionDate
+                ? new Date(book.acquisitionInfo.acquisitionDate)
+                    .toISOString()
+                    .split("T")[0]
+                : new Date().toISOString().split("T")[0],
+            }
+          : {
+              acquisitionDate: new Date().toISOString().split("T")[0],
+              source: "purchase",
+              cost: 0,
+              donor: "",
+              notes: "",
+            },
         condition: book.condition,
         isActive: book.isActive,
         isFeatured: book.isFeatured,
@@ -94,26 +128,6 @@ export default function EditBookPage({ params }: EditBookPageProps) {
       ...prev,
       [section]: { ...prev[section], [field]: value },
     }));
-  };
-
-  const handleAuthorsChange = (index: number, value: string) => {
-    const newAuthors = [...(formData.authors || [])];
-    newAuthors[index] = value;
-    setFormData((prev) => ({ ...prev, authors: newAuthors }));
-  };
-
-  const addAuthor = () => {
-    setFormData((prev) => ({
-      ...prev,
-      authors: [...(prev.authors || []), ""],
-    }));
-  };
-
-  const removeAuthor = (index: number) => {
-    if ((formData.authors?.length || 0) > 1) {
-      const newAuthors = (formData.authors || []).filter((_, i) => i !== index);
-      setFormData((prev) => ({ ...prev, authors: newAuthors }));
-    }
   };
 
   const handleCategoriesChange = (category: string) => {
@@ -151,8 +165,8 @@ export default function EditBookPage({ params }: EditBookPageProps) {
       return;
     }
 
-    if (formData.authors?.some((author) => !author.trim())) {
-      toast.error("All author fields must be filled");
+    if (!formData.authors || formData.authors.length === 0) {
+      toast.error("At least one author must be selected");
       return;
     }
 
@@ -164,7 +178,6 @@ export default function EditBookPage({ params }: EditBookPageProps) {
     // Clean up data
     const cleanedData = {
       ...formData,
-      authors: formData.authors?.filter((author) => author.trim()),
       pages: formData.pages || undefined,
     };
 
@@ -268,62 +281,29 @@ export default function EditBookPage({ params }: EditBookPageProps) {
 
             {/* Authors */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Authors *
-              </label>
-              {(formData.authors || []).map((author, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={author}
-                    onChange={(e) => handleAuthorsChange(index, e.target.value)}
-                    placeholder={`Author ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    required
-                  />
-                  {(formData.authors?.length || 0) > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeAuthor(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-md"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addAuthor}
-                className="text-blue-600 hover:text-blue-700 text-sm"
-              >
-                + Add Author
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ISBN
-              </label>
-              <input
-                type="text"
-                name="isbn"
-                value={formData.isbn || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              <SearchableMultiSelect
+                label="Authors"
+                options={authors}
+                value={formData.authors || []}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, authors: value }))
+                }
+                placeholder="Select authors..."
+                required
+                loading={isLoadingOptions}
               />
             </div>
 
+            {/* Book ID (read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ISBN-13
+                Book ID
               </label>
               <input
                 type="text"
-                name="isbn13"
-                value={formData.isbn13 || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                value={bookResponse?.data?.book?.bookId || ""}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
               />
             </div>
 
@@ -332,7 +312,7 @@ export default function EditBookPage({ params }: EditBookPageProps) {
                 Publisher
               </label>
               <SearchableSelect
-                options={formOptions?.data?.publishers || []}
+                options={publishers}
                 value={formData.publisher || ""}
                 onChange={(value) =>
                   setFormData((prev) => ({ ...prev, publisher: value }))
@@ -408,7 +388,7 @@ export default function EditBookPage({ params }: EditBookPageProps) {
               Categories *
             </label>
             <SearchableSelect
-              options={formOptions?.data?.categories || []}
+              options={categories}
               value={(formData.categories && formData.categories[0]) || ""}
               onChange={(value) =>
                 setFormData((prev) => ({

@@ -1,6 +1,7 @@
 "use client";
 
 import { getBookCategories, getBooks } from "@/services/bookService";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 interface CategoryData {
@@ -162,9 +163,10 @@ export function Categories() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((category) => (
-            <div
+            <Link
               key={category.name}
-              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition duration-200 cursor-pointer group"
+              href={`/books?category=${encodeURIComponent(category.name)}`}
+              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition duration-200 cursor-pointer group block"
             >
               <div className="text-center">
                 <div className="text-4xl mb-3">{category.icon}</div>
@@ -178,14 +180,17 @@ export function Categories() {
                   {category.bookCount} books
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
         <div className="text-center mt-12">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-200">
+          <Link
+            href="/books"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-200 inline-block"
+          >
             View All Categories
-          </button>
+          </Link>
         </div>
       </div>
     </section>

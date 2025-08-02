@@ -1,6 +1,7 @@
 "use client";
 
 import { useFeaturedBooksQuery } from "@/hooks/useBooks";
+import Link from "next/link";
 
 export function FeaturedBooks() {
   const { data: response, isLoading: loading, error } = useFeaturedBooksQuery();
@@ -8,6 +9,8 @@ export function FeaturedBooks() {
   const featuredBooks = response?.data?.books?.slice(0, 4) || [];
 
   console.log("Featured Books Response:", response);
+  console.log("Featured Books Error:", error);
+  console.log("Featured Books Loading:", loading);
 
   if (loading) {
     return (
@@ -93,7 +96,14 @@ export function FeaturedBooks() {
                 {book.title}
               </h3>
               <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-                by {book.authors.join(", ")}
+                by{" "}
+                {Array.isArray(book.authors)
+                  ? book.authors
+                      .map((author: any) =>
+                        typeof author === "object" ? author.name : author
+                      )
+                      .join(", ")
+                  : book.authors}
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
@@ -106,9 +116,12 @@ export function FeaturedBooks() {
                   </span>
                 </div>
               </div>
-              <button className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm transition duration-200">
+              <Link
+                href={`/books/${book._id}`}
+                className="block w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm transition duration-200 text-center"
+              >
                 View Details
-              </button>
+              </Link>
             </div>
           ))}
         </div>

@@ -1,3 +1,7 @@
 {
-  "/dashboard/books/add/page": "app/dashboard/books/add/page.js"
+  "/auth/login/page": "app/auth/login/page.js",
+  "/dashboard/categories/page": "app/dashboard/categories/page.js",
+  "/dashboard/books/page": "app/dashboard/books/page.js",
+  "/dashboard/books/add/page": "app/dashboard/books/add/page.js",
+  "/dashboard/books/edit/[id]/page": "app/dashboard/books/edit/[id]/page.js"
 }

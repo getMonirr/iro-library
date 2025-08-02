@@ -158,19 +158,24 @@ export function BooksTable({
                     {book.title}
                   </div>
                   <div className="text-gray-500 dark:text-gray-400">
-                    by {book.authors.join(", ")}
+                    by{" "}
+                    {book.authors
+                      .map((author: any) =>
+                        typeof author === "object" ? author.name : author
+                      )
+                      .join(", ")}
                   </div>
-                  <div className="text-xs text-gray-400">ISBN: {book.isbn}</div>
+                  <div className="text-xs text-gray-400">ID: {book.bookId}</div>
                 </div>
               </td>
               <td className="table-cell">
                 <div className="flex flex-wrap gap-1">
-                  {book.categories.slice(0, 2).map((category, index) => (
+                  {book.categories.slice(0, 2).map((category: any, index) => (
                     <span
                       key={index}
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                     >
-                      {category}
+                      {typeof category === "object" ? category.name : category}
                     </span>
                   ))}
                   {book.categories.length > 2 && (

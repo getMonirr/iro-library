@@ -69,6 +69,7 @@ router.get("/search", book_controller_1.searchBooks);
 router.get("/featured", book_controller_1.getFeaturedBooks);
 router.get("/popular", book_controller_1.getPopularBooks);
 router.get("/categories", book_controller_1.getBookCategories);
+router.get("/stats", book_controller_1.getLibraryStats);
 router.get("/form-data", book_controller_1.getBookFormData);
 router.get("/", auth_1.optionalAuth, book_controller_1.getAllBooks);
 router.get("/:id", auth_1.optionalAuth, book_controller_1.getBook);
