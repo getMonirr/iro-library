@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: iro-library-management
+metadata:
+  template: iro-library-management@0.0.1-beta
+  
+services:
+  backend:
+    project: ./backend
+    language: ts
+    host: containerapp
+    docker:
+      path: ./backend/Dockerfile
+      context: ./backend
+    
+  user-site:
+    project: ./frontend/user-site
+    language: ts
+    host: staticwebapp
+    
+  admin-site:
+    project: ./frontend/admin-site
+    language: ts
+    host: staticwebapp
+
+hooks:
+  postdeploy:
+    shell: pwsh
+    run: |
+      echo "🎉 Deployment completed successfully!"
+      echo "📱 User Site URL: $env:USER_SITE_URL"
+      echo "⚙️ Admin Site URL: $env:ADMIN_SITE_URL" 
+      echo "🔗 Backend API URL: $env:BACKEND_API_URL"

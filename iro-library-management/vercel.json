@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "iro-library-backend",
+  "builds": [
+    {
+      "src": "backend/package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/dist/server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "backend/dist/server.js": {
+      "maxDuration": 30
+    }
+  },
+  "installCommand": "cd backend && npm install",
+  "buildCommand": "cd backend && npm run build"
+}

@@ -1,0 +1,62 @@
+name: Deploy IRO Library Management System
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME }}
+  AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          backend/package-lock.json
+          frontend/user-site/package-lock.json
+          frontend/admin-site/package-lock.json
+
+    - name: Install Azure Developer CLI
+      uses: Azure/setup-azd@v0.1.0
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Azure Dev Provision
+      run: azd provision --no-prompt
+      env:
+        AZD_INITIAL_ENVIRONMENT_CONFIG: |
+          {
+            "version": 1,
+            "environment": {
+              "name": "${{ secrets.AZURE_ENV_NAME }}",
+              "location": "${{ secrets.AZURE_LOCATION }}"
+            }
+          }
+
+    - name: Azure Dev Deploy
+      run: azd deploy --no-prompt
