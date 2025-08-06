@@ -18,6 +18,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               style: {
                 background: "#363636",
                 color: "#fff",
+                fontSize: "14px",
+                maxWidth: "500px",
               },
               success: {
                 duration: 3000,
@@ -25,12 +27,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   primary: "#22c55e",
                   secondary: "#fff",
                 },
+                style: {
+                  background: "#10b981",
+                  color: "#fff",
+                },
               },
               error: {
-                duration: 5000,
+                duration: 8000, // Longer duration for errors
                 iconTheme: {
                   primary: "#ef4444",
                   secondary: "#fff",
+                },
+                style: {
+                  background: "#ef4444",
+                  color: "#fff",
+                  fontWeight: "500",
                 },
               },
             }}

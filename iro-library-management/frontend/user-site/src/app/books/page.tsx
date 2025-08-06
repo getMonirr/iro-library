@@ -156,14 +156,6 @@ export default function BooksPage() {
   const books = booksResponse?.data?.books || [];
   const pagination = booksResponse?.data?.pagination;
 
-  // Debug logging
-  console.log("Books Response:", booksResponse);
-  console.log("Books:", books);
-  console.log("Pagination:", pagination);
-  console.log("Books length:", books.length);
-  console.log("Current page:", currentPage);
-  console.log("Items per page:", itemsPerPage);
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />

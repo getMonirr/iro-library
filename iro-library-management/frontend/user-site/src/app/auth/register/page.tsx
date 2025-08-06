@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { login: authLogin } = useAuth();
 
@@ -33,6 +34,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null); // Clear previous errors
 
     if (
       !formData.firstName ||
@@ -41,17 +43,23 @@ export default function RegisterPage() {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      toast.error("Please fill in all required fields");
+      const errorMsg = "Please fill in all required fields";
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
+      const errorMsg = "Passwords do not match";
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
+      const errorMsg = "Password must be at least 6 characters long";
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -72,7 +80,13 @@ export default function RegisterPage() {
         registerData.phone = formData.phone;
       }
 
+      console.log("Attempting registration with:", {
+        ...registerData,
+        password: "***",
+      });
       const response = await register(registerData);
+
+      console.log("Registration response:", response);
 
       if (response.success) {
         authLogin(response.data.user); // Update auth context
@@ -80,7 +94,11 @@ export default function RegisterPage() {
         router.push("/");
       }
     } catch (error: any) {
-      toast.error(error.message || "Registration failed");
+      console.error("Registration error caught:", error);
+      const errorMessage =
+        error.message || "Registration failed. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -107,6 +125,35 @@ export default function RegisterPage() {
 
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                    Registration Error
+                  </h3>
+                  <div className="mt-1 text-sm text-red-700 dark:text-red-300">
+                    {error}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Name Fields */}
           <div className="grid grid-cols-2 gap-4">
             <div>

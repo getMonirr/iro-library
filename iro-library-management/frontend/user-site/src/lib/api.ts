@@ -46,10 +46,19 @@ api.interceptors.response.use(
       error.response?.data,
       error.config?.url
     );
-    if (error.response?.status === 401) {
-      // Clear auth token and redirect to login
+
+    // Don't auto-redirect on login/register pages to allow error display
+    const currentPath =
+      typeof window !== "undefined" ? window.location.pathname : "";
+    const isAuthPage =
+      currentPath.includes("/auth/login") ||
+      currentPath.includes("/auth/register");
+
+    if (error.response?.status === 401 && !isAuthPage) {
+      // Only clear token and redirect if not on auth pages
       Cookies.remove("auth-token");
       if (typeof window !== "undefined") {
+        localStorage.removeItem("user");
         window.location.href = "/auth/login";
       }
     }

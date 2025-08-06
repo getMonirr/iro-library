@@ -1,6 +1,7 @@
 "use client";
 
-import { getBookCategories, getBooks } from "@/services/bookService";
+import { Book, getBookCategories, getBooks } from "@/services/bookService";
+import { BookOpen, ChevronRight, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -9,6 +10,7 @@ interface CategoryData {
   bookCount: number;
   icon: string;
   description: string;
+  sampleBooks: Book[];
 }
 
 export function Categories() {
@@ -38,62 +40,160 @@ export function Categories() {
               icon: "📖",
               description: "Biography, history, and educational content",
             },
-            "Science & Technology": {
-              icon: "🔬",
-              description: "Computer science, engineering, and research",
+            "Science Fiction": {
+              icon: "🚀",
+              description: "Futuristic and speculative fiction",
             },
-            "Arts & Literature": {
-              icon: "🎨",
-              description: "Poetry, drama, and artistic expression",
+            Fantasy: {
+              icon: "🐉",
+              description: "Magical worlds and mythical creatures",
+            },
+            Mystery: {
+              icon: "🔍",
+              description: "Crime, detective, and suspense stories",
+            },
+            Romance: {
+              icon: "❤️",
+              description: "Love stories and romantic fiction",
+            },
+            Thriller: {
+              icon: "⚡",
+              description: "High-stakes and suspenseful narratives",
+            },
+            Biography: {
+              icon: "👤",
+              description: "Life stories of notable people",
+            },
+            History: {
+              icon: "🏛️",
+              description: "Historical events and periods",
+            },
+            Psychology: {
+              icon: "🧠",
+              description: "Human behavior and mental processes",
             },
             Business: {
               icon: "💼",
-              description: "Entrepreneurship, management, and economics",
+              description: "Entrepreneurship and business strategy",
             },
-            "Health & Wellness": {
-              icon: "🏃",
-              description: "Fitness, nutrition, and mental health",
+            Technology: {
+              icon: "💻",
+              description: "Computer science and innovation",
             },
-            "Mystery & Thriller": {
-              icon: "🔍",
-              description: "Crime, suspense, and detective stories",
-            },
-            "Children's Books": {
-              icon: "🧸",
-              description: "Picture books, early readers, and young adult",
-            },
-            Religion: {
-              icon: "🕌",
-              description: "Islamic studies and religious texts",
-            },
-            History: {
+            "Classic Literature": {
               icon: "📜",
-              description: "Historical accounts and research",
+              description: "Timeless literary masterpieces",
+            },
+            "Dystopian Fiction": {
+              icon: "🏙️",
+              description: "Dark future societies and control",
+            },
+            "Coming of Age": {
+              icon: "🌱",
+              description: "Stories of growth and self-discovery",
+            },
+            "Political Satire": {
+              icon: "🎭",
+              description: "Humor and criticism of politics",
+            },
+            "Magical Realism": {
+              icon: "✨",
+              description: "Reality blended with magical elements",
+            },
+            Philosophy: {
+              icon: "🤔",
+              description: "Deep thinking about existence and reality",
+            },
+            "Contemporary Fiction": {
+              icon: "🌆",
+              description: "Modern stories reflecting current times",
+            },
+            Adventure: {
+              icon: "🗺️",
+              description: "Exciting journeys and explorations",
+            },
+            "Historical Fiction": {
+              icon: "⚔️",
+              description: "Stories set in historical periods",
+            },
+            "Dark Comedy": {
+              icon: "😅",
+              description: "Humor with darker, satirical elements",
             },
           };
 
-          const categoryData = categoriesResponse.data.map((categoryName) => {
-            const bookCount = booksResponse.data.books.filter(
-              (book) => book.category === categoryName
-            ).length;
-            const categoryInfo = categoryIcons[categoryName] || {
-              icon: "📖",
-              description: "Various books and resources",
-            };
+          const books = booksResponse.data.books;
+          console.log("Categories component - All books:", books.length);
+          console.log(
+            "Categories component - Sample book structure:",
+            books[0]
+          );
 
-            return {
-              name: categoryName,
-              bookCount,
-              icon: categoryInfo.icon,
-              description: categoryInfo.description,
-            };
-          });
+          const categoryData: CategoryData[] = categoriesResponse.data.map(
+            (categoryName: string) => {
+              // Filter books that have this category name
+              const categoryBooks = books.filter((book) => {
+                // Check if book has categories array and if any category matches the categoryName
+                if (book.categories && Array.isArray(book.categories)) {
+                  return book.categories.some((cat) => {
+                    // Handle both string and object category formats
+                    if (typeof cat === "string") {
+                      return cat === categoryName;
+                    }
+                    // Handle object format with name property
+                    if (typeof cat === "object" && cat && "name" in cat) {
+                      return (cat as any).name === categoryName;
+                    }
+                    return false;
+                  });
+                }
+                // Fallback check for books that might have category as string
+                if (book.category && typeof book.category === "string") {
+                  return book.category === categoryName;
+                }
+                return false;
+              });
 
-          setCategories(categoryData);
+              console.log(
+                `Categories component - ${categoryName}: ${categoryBooks.length} books`
+              );
+              if (categoryBooks.length > 0) {
+                console.log(
+                  `Categories component - Sample books for ${categoryName}:`,
+                  categoryBooks
+                    .slice(0, 2)
+                    .map((b) => ({ title: b.title, categories: b.categories }))
+                );
+              }
+
+              const categoryInfo = categoryIcons[categoryName] || {
+                icon: "📁",
+                description: "Discover books in this category",
+              };
+
+              return {
+                name: categoryName,
+                bookCount: categoryBooks.length,
+                icon: categoryInfo.icon,
+                description: categoryInfo.description,
+                sampleBooks: categoryBooks.slice(0, 3), // Get first 3 books as samples
+              };
+            }
+          );
+
+          // Sort by book count (descending) and show only categories with books
+          const sortedCategories = categoryData
+            .filter((cat) => cat.bookCount > 0)
+            .sort((a, b) => b.bookCount - a.bookCount)
+            .slice(0, 8); // Show top 8 categories
+
+          setCategories(sortedCategories);
+        } else {
+          setError("Failed to fetch categories or books");
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch categories");
-        console.error("Error fetching categories:", err);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setError("An error occurred while fetching categories");
       } finally {
         setLoading(false);
       }
@@ -165,31 +265,61 @@ export function Categories() {
           {categories.map((category) => (
             <Link
               key={category.name}
-              href={`/books?category=${encodeURIComponent(category.name)}`}
-              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition duration-200 cursor-pointer group block"
+              href={`/categories?category=${encodeURIComponent(category.name)}`}
+              className="group bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700"
             >
               <div className="text-center">
                 <div className="text-4xl mb-3">{category.icon}</div>
-                <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition duration-200">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {category.name}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
                   {category.description}
                 </p>
-                <div className="inline-flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
-                  {category.bookCount} books
+                <div className="flex items-center justify-center">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                    <BookOpen className="w-3 h-3 mr-1" />
+                    {category.bookCount}{" "}
+                    {category.bookCount === 1 ? "book" : "books"}
+                  </span>
                 </div>
               </div>
+
+              {/* Sample books preview */}
+              {category.sampleBooks.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    Sample Books
+                  </h4>
+                  <div className="space-y-1">
+                    {category.sampleBooks.map((book, index) => (
+                      <div
+                        key={book._id}
+                        className="flex items-center text-xs text-gray-600 dark:text-gray-300"
+                      >
+                        <div className="flex items-center min-w-0 flex-1">
+                          <Star className="w-2.5 h-2.5 text-yellow-400 mr-1.5 flex-shrink-0" />
+                          <span className="truncate">{book.title}</span>
+                        </div>
+                        {index < category.sampleBooks.length - 1 && (
+                          <ChevronRight className="w-2.5 h-2.5 text-gray-400 ml-1 flex-shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Link>
           ))}
         </div>
 
         <div className="text-center mt-12">
           <Link
-            href="/books"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-200 inline-block"
+            href="/categories"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
           >
             View All Categories
+            <ChevronRight className="ml-2 -mr-1 w-5 h-5" />
           </Link>
         </div>
       </div>

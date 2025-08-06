@@ -44,54 +44,96 @@ export interface ProfileResponse {
 
 // Login user
 export const login = async (loginData: LoginData): Promise<AuthResponse> => {
-  const response = await api.post("/auth/login", loginData);
+  try {
+    const response = await api.post("/auth/login", loginData);
 
-  if (response.data.status === "success") {
-    // Store token in cookies
-    Cookies.set("auth-token", response.data.token, { expires: 7 });
-    // Store user in localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(response.data.data.user));
+    if (response.data.status === "success") {
+      // Store token in cookies
+      Cookies.set("auth-token", response.data.token, { expires: 7 });
+      // Store user in localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+      }
+      // Return in expected format
+      return {
+        success: true,
+        data: {
+          user: response.data.data.user,
+          token: response.data.token,
+        },
+        message: "Login successful",
+      };
     }
-    // Return in expected format
-    return {
-      success: true,
-      data: {
-        user: response.data.data.user,
-        token: response.data.token,
-      },
-      message: "Login successful",
-    };
-  }
 
-  throw new Error(response.data.message || "Login failed");
+    throw new Error(response.data.message || "Login failed");
+  } catch (error: any) {
+    console.error("Login error:", error);
+
+    // Extract error message from different possible sources
+    let errorMessage = "Login failed";
+
+    if (error.response?.data) {
+      // API error response
+      errorMessage =
+        error.response.data.message ||
+        error.response.data.error ||
+        error.response.data.details ||
+        `Server error: ${error.response.status}`;
+    } else if (error.message) {
+      // JavaScript error or network error
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
+  }
 };
 
 // Register user
 export const register = async (
   registerData: RegisterData
 ): Promise<AuthResponse> => {
-  const response = await api.post("/auth/signup", registerData);
+  try {
+    const response = await api.post("/auth/signup", registerData);
 
-  if (response.data.status === "success") {
-    // Store token in cookies
-    Cookies.set("auth-token", response.data.token, { expires: 7 });
-    // Store user in localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(response.data.data.user));
+    if (response.data.status === "success") {
+      // Store token in cookies
+      Cookies.set("auth-token", response.data.token, { expires: 7 });
+      // Store user in localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+      }
+      // Return in expected format
+      return {
+        success: true,
+        data: {
+          user: response.data.data.user,
+          token: response.data.token,
+        },
+        message: "Registration successful",
+      };
     }
-    // Return in expected format
-    return {
-      success: true,
-      data: {
-        user: response.data.data.user,
-        token: response.data.token,
-      },
-      message: "Registration successful",
-    };
-  }
 
-  throw new Error(response.data.message || "Registration failed");
+    throw new Error(response.data.message || "Registration failed");
+  } catch (error: any) {
+    console.error("Registration error:", error);
+
+    // Extract error message from different possible sources
+    let errorMessage = "Registration failed";
+
+    if (error.response?.data) {
+      // API error response
+      errorMessage =
+        error.response.data.message ||
+        error.response.data.error ||
+        error.response.data.details ||
+        `Server error: ${error.response.status}`;
+    } else if (error.message) {
+      // JavaScript error or network error
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
+  }
 };
 
 // Logout user
